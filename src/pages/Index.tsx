@@ -1686,6 +1686,7 @@ function RequestsSection({ profile }: { profile: UserProfile }) {
   const [subdivision, setSubdivision] = useState("");
   const [region, setRegion] = useState("");
   const [comment, setComment] = useState("");
+  const [generatingComment, setGeneratingComment] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [sendStatus, setSendStatus] = useState<SendStatus>("idle");
   const [history, setHistory] = useState<{
@@ -2022,9 +2023,42 @@ function RequestsSection({ profile }: { profile: UserProfile }) {
 
               {/* Comment */}
               <div>
-                <label className="block text-xs font-semibold text-[hsl(var(--navy))] uppercase tracking-wider mb-2">Сопроводительная записка</label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-xs font-semibold text-[hsl(var(--navy))] uppercase tracking-wider">Сопроводительная записка</label>
+                  <button
+                    disabled={!recipient || !docType || !caseNumber || generatingComment}
+                    onClick={async () => {
+                      setGeneratingComment(true);
+                      try {
+                        const prompt = `Составь краткую официальную сопроводительную записку для направления документа в государственный орган.
+Отправитель: ${profile.courtName}, ${profile.position} ${profile.name}.
+Получатель: ${selectedRecipient?.fullName ?? recipient}${region ? ", " + region : ""}${subdivision ? ", " + subdivision : ""}.
+Вид документа: ${docType}.
+Номер дела: ${caseNumber}.
+Сопроводительная записка должна быть краткой (3-5 предложений), официальным юридическим языком, без лишних реквизитов.`;
+                        const res = await fetch(SEARCH_API_URL, {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ messages: [{ role: "user", text: prompt }] }),
+                        });
+                        const data = await res.json();
+                        if (data.answer) setComment(data.answer);
+                      } catch {
+                        // silent
+                      } finally {
+                        setGeneratingComment(false);
+                      }
+                    }}
+                    className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-teal-700 border border-teal-200 bg-teal-50 rounded-sm hover:bg-teal-100 transition-colors disabled:opacity-40"
+                  >
+                    {generatingComment
+                      ? <><Icon name="Loader" size={12} className="animate-spin" /> Генерирую...</>
+                      : <><Icon name="Sparkles" size={12} /> Сгенерировать с ИИ</>
+                    }
+                  </button>
+                </div>
                 <textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={3}
-                  placeholder="Дополнительная информация для получателя..."
+                  placeholder="Дополнительная информация для получателя или нажмите «Сгенерировать с ИИ»..."
                   className="w-full px-3 py-2.5 text-sm border border-[hsl(var(--border))] rounded-sm bg-[hsl(var(--surface))] focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 resize-none" />
               </div>
 
