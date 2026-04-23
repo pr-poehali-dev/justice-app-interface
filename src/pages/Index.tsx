@@ -1590,9 +1590,14 @@ const RECIPIENTS = [
   { id: "izbirkom", group: "Иные органы", label: "Избирательная комиссия", fullName: "Избирательная комиссия субъекта Российской Федерации", icon: "Vote", docs: ["Судебный запрос", "Решение суда", "Определение суда"] },
 ];
 
-const DOC_TYPES = ["Судебный запрос", "Судебный акт", "Исполнительный лист", "Судебный приказ", "Определение суда", "Постановление суда", "Иной документ"];
+const UNIVERSAL_DOCS = ["Судебная повестка", "Иной документ"];
+
+const DOC_TYPES = ["Судебный запрос", "Судебный акт", "Исполнительный лист", "Судебный приказ", "Определение суда", "Постановление суда", ...UNIVERSAL_DOCS];
 
 const RECIPIENT_GROUPS = Array.from(new Set(RECIPIENTS.map((r) => r.group)));
+
+const getRecipientDocs = (r: typeof RECIPIENTS[0]) =>
+  [...r.docs, ...UNIVERSAL_DOCS.filter((d) => !r.docs.includes(d))];
 
 function RecipientSelector({ selected, onSelect }: { selected: string; onSelect: (id: string) => void }) {
   const [search, setSearch] = useState("");
@@ -1849,14 +1854,41 @@ function RequestsSection() {
               {/* Doc type */}
               <div>
                 <label className="block text-xs font-semibold text-[hsl(var(--navy))] uppercase tracking-wider mb-2">Вид направляемого документа</label>
-                <div className="flex flex-wrap gap-1.5">
-                  {(selectedRecipient?.docs ?? DOC_TYPES).map((d) => (
-                    <button key={d} onClick={() => setDocType(d)}
-                      className={`text-xs px-2.5 py-1.5 rounded-sm border font-medium transition-colors ${docType === d ? "bg-[hsl(var(--navy))] text-white border-[hsl(var(--navy))]" : "bg-white text-[hsl(var(--muted-foreground))] border-[hsl(var(--border))] hover:border-[hsl(var(--navy))]"}`}>
-                      {d}
-                    </button>
-                  ))}
-                </div>
+                {selectedRecipient && (
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap gap-1.5">
+                      {selectedRecipient.docs.map((d) => (
+                        <button key={d} onClick={() => setDocType(d)}
+                          className={`text-xs px-2.5 py-1.5 rounded-sm border font-medium transition-colors ${docType === d ? "bg-[hsl(var(--navy))] text-white border-[hsl(var(--navy))]" : "bg-white text-[hsl(var(--muted-foreground))] border-[hsl(var(--border))] hover:border-[hsl(var(--navy))]"}`}>
+                          {d}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="h-px flex-1 bg-[hsl(var(--border))]" />
+                      <span className="text-xs text-[hsl(var(--muted-foreground))] flex-shrink-0">доступно всем органам</span>
+                      <div className="h-px flex-1 bg-[hsl(var(--border))]" />
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {UNIVERSAL_DOCS.map((d) => (
+                        <button key={d} onClick={() => setDocType(d)}
+                          className={`text-xs px-2.5 py-1.5 rounded-sm border font-medium transition-colors ${docType === d ? "bg-teal-700 text-white border-teal-700" : "bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100"}`}>
+                          {d}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {!selectedRecipient && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {DOC_TYPES.map((d) => (
+                      <button key={d} onClick={() => setDocType(d)}
+                        className={`text-xs px-2.5 py-1.5 rounded-sm border font-medium transition-colors ${docType === d ? "bg-[hsl(var(--navy))] text-white border-[hsl(var(--navy))]" : "bg-white text-[hsl(var(--muted-foreground))] border-[hsl(var(--border))] hover:border-[hsl(var(--navy))]"}`}>
+                        {d}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Case number */}
