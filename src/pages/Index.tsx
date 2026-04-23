@@ -1674,11 +1674,18 @@ function RequestsSection() {
   const [comment, setComment] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [sendStatus, setSendStatus] = useState<SendStatus>("idle");
-  const [history, setHistory] = useState<{ id: string; recipient: string; docType: string; caseNumber: string; time: string; status: string; region?: string; subdivision?: string }[]>([
-    { id: "ЗПР-00142", recipient: "ФССП России", docType: "Исполнительный лист", caseNumber: "22-10018/2025", time: "12.04.2025 09:14", status: "Доставлен", region: "г. Москва", subdivision: "УФССП по ЦАО" },
-    { id: "ЗПР-00139", recipient: "ФНС России", docType: "Судебный запрос", caseNumber: "22-10011/2025", time: "10.04.2025 14:32", status: "Доставлен", region: "Московская область", subdivision: "" },
-    { id: "ЗПР-00137", recipient: "МВД России", docType: "Постановление суда", caseNumber: "22-10012/2025", time: "08.04.2025 11:05", status: "Ошибка", region: "г. Санкт-Петербург", subdivision: "ГУ МВД по г. СПб" },
+  const [history, setHistory] = useState<{
+    id: string; recipient: string; docType: string; caseNumber: string;
+    time: string; status: string; region?: string; subdivision?: string;
+    deadlineDays: number; sentDate: string;
+    reply?: { text: string; receivedAt: string };
+    replyOverdue: boolean; isPrivateDefinition?: boolean;
+  }[]>([
+    { id: "ЗПР-00142", recipient: "ФССП России", docType: "Исполнительный лист", caseNumber: "22-10018/2025", time: "12.04.2025 09:14", status: "Доставлен", region: "г. Москва", subdivision: "УФССП по ЦАО", deadlineDays: 30, sentDate: "2025-04-12", reply: { text: "Исполнительное производство №12345/25/77001-ИП возбуждено 15.04.2025. Должник установлен, меры по розыску имущества приняты.", receivedAt: "18.04.2025 10:30" }, replyOverdue: false },
+    { id: "ЗПР-00139", recipient: "ФНС России", docType: "Судебный запрос", caseNumber: "22-10011/2025", time: "10.04.2025 14:32", status: "Доставлен", region: "Московская область", subdivision: "", deadlineDays: 10, sentDate: "2025-04-10", reply: undefined, replyOverdue: true },
+    { id: "ЗПР-00137", recipient: "МВД России", docType: "Частное определение", caseNumber: "22-10012/2025", time: "08.04.2025 11:05", status: "Доставлен", region: "г. Санкт-Петербург", subdivision: "ГУ МВД по г. СПб", deadlineDays: 30, sentDate: "2025-04-08", reply: undefined, replyOverdue: false, isPrivateDefinition: true },
   ]);
+  const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const selectedRecipient = RECIPIENTS.find((r) => r.id === recipient);
@@ -1691,6 +1698,7 @@ function RequestsSection() {
     setTimeout(() => setSendStatus("sending"), 3000);
     setTimeout(() => {
       setSendStatus("done");
+      const deadline = docType === "Частное определение" ? 30 : docType === "Судебный запрос" ? 10 : 30;
       setHistory((prev) => [{
         id: reqId,
         recipient: selectedRecipient?.label ?? recipient,
@@ -1700,6 +1708,11 @@ function RequestsSection() {
         status: "Доставлен",
         region: region || undefined,
         subdivision: subdivision || undefined,
+        deadlineDays: deadline,
+        sentDate: new Date().toISOString().slice(0, 10),
+        reply: undefined,
+        replyOverdue: false,
+        isPrivateDefinition: docType === "Частное определение",
       }, ...prev]);
     }, 5000);
   };
@@ -1976,37 +1989,144 @@ function RequestsSection() {
                   className="w-full px-3 py-2.5 text-sm border border-[hsl(var(--border))] rounded-sm bg-[hsl(var(--surface))] focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 resize-none" />
               </div>
 
-              <button onClick={handleSend} disabled={!recipient || !docType || !caseNumber}
-                className="w-full py-3 bg-teal-700 text-white font-semibold text-sm rounded-sm hover:bg-teal-800 transition-colors disabled:opacity-40 flex items-center justify-center gap-2">
-                <Icon name="Lock" size={15} />
-                Зашифровать и отправить
-              </button>
+              <div className="flex gap-2">
+                <button onClick={handleSend} disabled={!recipient || !docType || !caseNumber}
+                  className="flex-1 py-3 bg-teal-700 text-white font-semibold text-sm rounded-sm hover:bg-teal-800 transition-colors disabled:opacity-40 flex items-center justify-center gap-2">
+                  <Icon name="Lock" size={15} />
+                  Зашифровать и отправить
+                </button>
+                <button
+                  disabled={!recipient || !caseNumber}
+                  onClick={() => {
+                    if (!recipient || !caseNumber) return;
+                    setDocType("Частное определение");
+                    setTimeout(() => handleSend(), 50);
+                  }}
+                  title="Направить частное определение суда"
+                  className="px-4 py-3 bg-red-600 text-white font-semibold text-sm rounded-sm hover:bg-red-700 transition-colors disabled:opacity-40 flex items-center justify-center gap-2 flex-shrink-0"
+                >
+                  <Icon name="AlertTriangle" size={15} />
+                  Частное определение
+                </button>
+              </div>
             </>
           )}
         </div>
 
         {/* Right: history */}
-        <div>
-          <h3 className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-widest mb-3">История отправлений</h3>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-widest">История отправлений</h3>
+            <span className="text-xs text-[hsl(var(--muted-foreground))]">{history.length} запросов</span>
+          </div>
+
+          {/* Summary badges */}
+          <div className="grid grid-cols-3 gap-1.5">
+            <div className="bg-emerald-50 border border-emerald-200 rounded-sm px-2 py-1.5 text-center">
+              <p className="text-sm font-bold text-emerald-700">{history.filter(h => h.reply).length}</p>
+              <p className="text-xs text-emerald-600">Ответов</p>
+            </div>
+            <div className="bg-amber-50 border border-amber-200 rounded-sm px-2 py-1.5 text-center">
+              <p className="text-sm font-bold text-amber-700">{history.filter(h => !h.reply && !h.replyOverdue).length}</p>
+              <p className="text-xs text-amber-600">Ожидают</p>
+            </div>
+            <div className="bg-red-50 border border-red-200 rounded-sm px-2 py-1.5 text-center">
+              <p className="text-sm font-bold text-red-700">{history.filter(h => h.replyOverdue).length}</p>
+              <p className="text-xs text-red-600">Просрочено</p>
+            </div>
+          </div>
+
           <div className="space-y-2">
-            {history.map((h) => (
-              <div key={h.id} className="bg-white border border-[hsl(var(--border))] rounded-sm p-3 animate-fade-in">
-                <div className="flex items-start justify-between gap-2 mb-1">
-                  <span className="text-xs font-mono-ru font-bold text-[hsl(var(--navy))]">{h.id}</span>
-                  <span className={`text-xs px-1.5 py-0.5 rounded border font-medium flex-shrink-0 ${h.status === "Доставлен" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-red-50 text-red-700 border-red-200"}`}>
-                    {h.status}
-                  </span>
+            {history.map((h) => {
+              const isSelected = selectedHistoryId === h.id;
+              const sentMs = new Date(h.sentDate).getTime();
+              const deadlineDate = new Date(sentMs + h.deadlineDays * 86400000);
+              const today = new Date();
+              const daysLeft = Math.ceil((deadlineDate.getTime() - today.getTime()) / 86400000);
+              const deadlineLabel = deadlineDate.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric" });
+
+              return (
+                <div key={h.id}
+                  className={`bg-white border rounded-sm animate-fade-in cursor-pointer transition-all ${isSelected ? "border-teal-400 shadow-sm" : h.isPrivateDefinition ? "border-red-300" : "border-[hsl(var(--border))]"}`}
+                  onClick={() => setSelectedHistoryId(isSelected ? null : h.id)}
+                >
+                  <div className="p-3">
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <div className="flex items-center gap-1.5">
+                        {h.isPrivateDefinition && <Icon name="AlertTriangle" size={11} className="text-red-600 flex-shrink-0" />}
+                        <span className="text-xs font-mono-ru font-bold text-[hsl(var(--navy))]">{h.id}</span>
+                      </div>
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        {h.replyOverdue && <span className="text-xs px-1.5 py-0.5 rounded border font-medium bg-red-50 text-red-700 border-red-200">Просрочен</span>}
+                        {h.reply && <span className="text-xs px-1.5 py-0.5 rounded border font-medium bg-emerald-50 text-emerald-700 border-emerald-200">Ответ получен</span>}
+                        {!h.reply && !h.replyOverdue && <span className="text-xs px-1.5 py-0.5 rounded border font-medium bg-amber-50 text-amber-700 border-amber-200">Ожидается</span>}
+                      </div>
+                    </div>
+
+                    <p className={`text-xs font-semibold truncate ${h.isPrivateDefinition ? "text-red-700" : "text-[hsl(var(--foreground))]"}`}>{h.recipient}</p>
+                    {(h.region || h.subdivision) && (
+                      <p className="text-xs text-[hsl(var(--navy))] truncate leading-tight">{[h.region, h.subdivision].filter(Boolean).join(" · ")}</p>
+                    )}
+                    <p className="text-xs text-[hsl(var(--muted-foreground))] truncate">{h.docType} · {h.caseNumber}</p>
+
+                    {/* Deadline bar */}
+                    <div className="mt-2">
+                      <div className="flex justify-between text-xs mb-0.5">
+                        <span className="text-[hsl(var(--muted-foreground))]">Срок ответа: {deadlineLabel}</span>
+                        <span className={`font-medium ${h.reply ? "text-emerald-600" : daysLeft < 0 ? "text-red-600" : daysLeft <= 3 ? "text-amber-600" : "text-[hsl(var(--muted-foreground))]"}`}>
+                          {h.reply ? "✓" : daysLeft < 0 ? `просрочен ${Math.abs(daysLeft)} дн.` : `${daysLeft} дн.`}
+                        </span>
+                      </div>
+                      <div className="h-1 bg-[hsl(var(--muted))] rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full transition-all ${h.reply ? "bg-emerald-500" : daysLeft < 0 ? "bg-red-500" : daysLeft <= 3 ? "bg-amber-500" : "bg-teal-500"}`}
+                          style={{ width: h.reply ? "100%" : `${Math.max(0, Math.min(100, ((h.deadlineDays - Math.max(0, daysLeft)) / h.deadlineDays) * 100))}%` }} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Expanded: reply */}
+                  {isSelected && (
+                    <div className="border-t border-[hsl(var(--border))] px-3 pb-3 pt-2 animate-fade-in">
+                      {h.reply ? (
+                        <div>
+                          <div className="flex items-center gap-1.5 mb-1.5">
+                            <Icon name="MessageSquare" size={12} className="text-emerald-600" />
+                            <span className="text-xs font-semibold text-emerald-700">Ответ получен {h.reply.receivedAt}</span>
+                          </div>
+                          <p className="text-xs text-[hsl(var(--foreground))] leading-relaxed bg-emerald-50 border border-emerald-100 rounded-sm px-3 py-2">{h.reply.text}</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <p className={`text-xs font-medium ${h.replyOverdue ? "text-red-600" : "text-amber-600"}`}>
+                            {h.replyOverdue ? "⚠️ Срок ответа истёк. Рекомендуется направить напоминание." : "Ответ пока не поступил."}
+                          </p>
+                          <div className="flex gap-1.5">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setHistory(prev => prev.map(item => item.id === h.id
+                                  ? { ...item, reply: { text: "Сведения предоставлены. Запрашиваемая информация направлена в суд.", receivedAt: new Date().toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) }, replyOverdue: false }
+                                  : item
+                                ));
+                              }}
+                              className="flex-1 py-1.5 bg-emerald-600 text-white text-xs font-medium rounded-sm hover:bg-emerald-700 transition-colors flex items-center justify-center gap-1"
+                            >
+                              <Icon name="CheckCircle" size={12} /> Отметить ответ полученным
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); }}
+                              className="px-3 py-1.5 border border-[hsl(var(--border))] text-xs rounded-sm hover:bg-[hsl(var(--muted))] transition-colors flex items-center gap-1 text-[hsl(var(--muted-foreground))]"
+                            >
+                              <Icon name="SendHorizonal" size={12} /> Напомнить
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <p className="text-xs font-medium text-[hsl(var(--foreground))] truncate">{h.recipient}</p>
-                {(h.region || h.subdivision) && (
-                  <p className="text-xs text-[hsl(var(--navy))] truncate leading-tight">
-                    {[h.region, h.subdivision].filter(Boolean).join(" · ")}
-                  </p>
-                )}
-                <p className="text-xs text-[hsl(var(--muted-foreground))] truncate">{h.docType} · {h.caseNumber}</p>
-                <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1 font-mono-ru">{h.time}</p>
-              </div>
-            ))}
+              );
+            })}
             {history.length === 0 && (
               <div className="text-center py-8 text-[hsl(var(--muted-foreground))]">
                 <Icon name="SendHorizonal" size={28} className="mx-auto mb-2 opacity-30" />
