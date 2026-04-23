@@ -980,6 +980,7 @@ type UserProfile = {
   role: UserRole;
   position: string;
   department: string;
+  courtName: string;
   caseLoad: number;
   casesThisMonth: number;
   onVacation: boolean;
@@ -992,6 +993,7 @@ const DEFAULT_PROFILE: UserProfile = {
   role: "judge",
   position: "Судья",
   department: "Судебный состав №2",
+  courtName: "Преображенский районный суд г. Москвы",
   caseLoad: 45,
   casesThisMonth: 12,
   onVacation: false,
@@ -1117,6 +1119,18 @@ function ProfilePanel({
                     <div>
                       <p className="text-xs text-[hsl(var(--muted-foreground))]">Подразделение</p>
                       <p className="text-sm font-medium text-[hsl(var(--navy))]">{profile.department}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 px-3 py-2.5 bg-[hsl(var(--surface))] border border-[hsl(var(--border))] rounded-sm">
+                    <Icon name="Landmark" size={14} className="text-[hsl(var(--muted-foreground))] flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-[hsl(var(--muted-foreground))]">Наименование суда</p>
+                      <input
+                        value={profile.courtName}
+                        onChange={(e) => setProfile((p) => ({ ...p, courtName: e.target.value }))}
+                        className="text-sm font-medium text-[hsl(var(--navy))] bg-transparent focus:outline-none w-full border-b border-transparent focus:border-[hsl(var(--navy))] transition-colors"
+                        placeholder="Введите наименование суда..."
+                      />
                     </div>
                   </div>
                 </div>
@@ -2505,17 +2519,26 @@ export default function Index() {
       <main className="flex-1 flex flex-col min-w-0">
         <header className="bg-white border-b border-[hsl(var(--border))] px-8 py-3 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-2 text-xs text-[hsl(var(--muted-foreground))]">
-            <button onClick={() => setActive("home")} className="hover:text-[hsl(var(--navy))] transition-colors">
-              Главная
-            </button>
             {active !== "home" && (
               <>
+                <button onClick={() => setActive("home")} className="hover:text-[hsl(var(--navy))] transition-colors flex items-center gap-1">
+                  <Icon name="LayoutDashboard" size={12} />
+                  Главная
+                </button>
                 <Icon name="ChevronRight" size={12} />
                 <span className="text-[hsl(var(--navy))] font-medium">{NAV_ITEMS.find((n) => n.id === active)?.label}</span>
               </>
             )}
           </div>
           <div className="flex items-center gap-4">
+            <button
+              onClick={() => setProfileOpen(true)}
+              className="hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-sm border border-[hsl(var(--border))] hover:border-[hsl(var(--navy))] hover:bg-[hsl(var(--surface))] transition-colors"
+            >
+              <Icon name="Landmark" size={13} className="text-[hsl(var(--navy))] flex-shrink-0" />
+              <span className="text-xs font-medium text-[hsl(var(--navy))] max-w-xs truncate">{profile.courtName || "Наименование суда"}</span>
+            </button>
+            <div className="h-5 w-px bg-[hsl(var(--border))]" />
             <div className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-500 status-dot" />
               <span className="text-xs text-[hsl(var(--muted-foreground))]">Система работает</span>
