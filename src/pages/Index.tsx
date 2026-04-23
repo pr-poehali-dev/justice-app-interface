@@ -971,11 +971,13 @@ function ProfilePanel({
   profile,
   setProfile,
   onSyncToJudges,
+  onLogout,
 }: {
   onClose: () => void;
   profile: UserProfile;
   setProfile: React.Dispatch<React.SetStateAction<UserProfile>>;
   onSyncToJudges: (p: UserProfile) => void;
+  onLogout: () => void;
 }) {
   const [editName, setEditName] = useState(false);
   const [nameInput, setNameInput] = useState(profile.name);
@@ -1244,7 +1246,10 @@ function ProfilePanel({
                 </div>
               </div>
 
-              <button className="w-full py-2.5 border border-red-200 text-red-600 text-sm font-medium rounded-sm hover:bg-red-50 transition-colors flex items-center justify-center gap-2 mt-4">
+              <button
+                onClick={() => { onClose(); onLogout(); }}
+                className="w-full py-2.5 border border-red-200 text-red-600 text-sm font-medium rounded-sm hover:bg-red-50 transition-colors flex items-center justify-center gap-2 mt-4"
+              >
                 <Icon name="LogOut" size={15} /> Выйти из системы
               </button>
             </div>
@@ -1922,6 +1927,7 @@ export default function Index() {
             profile={profile}
             setProfile={setProfile}
             onSyncToJudges={syncProfileToJudges}
+            onLogout={() => { setProfileOpen(false); setIsAuthed(false); }}
           />
         )}
 
