@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Icon from "@/components/ui/icon";
 
 type Section = "home" | "search" | "generator" | "stenography" | "distribution";
@@ -442,18 +442,82 @@ function GeneratorSection() {
   );
 }
 
-function StenographySection() {
-  const [uploaded, setUploaded] = useState(false);
-  const [processing, setProcessing] = useState(false);
-  const [done, setDone] = useState(false);
+const STENOGRAPHY_URL = "https://functions.poehali.dev/8a7cda5c-6df6-409d-81e0-9d0f79e71f7f";
 
-  const handleUpload = () => {
-    setUploaded(true);
+type ProtocolEntry = { time: string; speaker: string; text: string };
+
+function StenographySection() {
+  const [file, setFile] = useState<File | null>(null);
+  const [processing, setProcessing] = useState(false);
+  const [entries, setEntries] = useState<ProtocolEntry[]>([]);
+  const [error, setError] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = (f: File) => {
+    setFile(f);
+    setEntries([]);
+    setError("");
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const f = e.dataTransfer.files[0];
+    if (f) handleFile(f);
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) handleFile(f);
+  };
+
+  const process = async () => {
+    if (!file || processing) return;
     setProcessing(true);
-    setTimeout(() => {
+    setError("");
+    setEntries([]);
+
+    try {
+      const buffer = await file.arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+      let binary = "";
+      for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+      const b64 = btoa(binary);
+
+      const res = await fetch(STENOGRAPHY_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          audio_base64: b64,
+          filename: file.name,
+          mime_type: file.type || "audio/mpeg",
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Ошибка сервера");
+      setEntries(data.entries || []);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Неизвестная ошибка";
+      setError(msg);
+    } finally {
       setProcessing(false);
-      setDone(true);
-    }, 2500);
+    }
+  };
+
+  const copyProtocol = () => {
+    const text = entries.map((e) => `[${e.time}] ${e.speaker}: ${e.text}`).join("\n");
+    navigator.clipboard.writeText(text);
+  };
+
+  const reset = () => {
+    setFile(null);
+    setEntries([]);
+    setError("");
+  };
+
+  const formatSize = (bytes: number) => {
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} КБ`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} МБ`;
   };
 
   return (
@@ -465,7 +529,7 @@ function StenographySection() {
           </div>
           <div>
             <h2 className="font-bold text-[hsl(var(--navy))] text-base">Модуль стенографии</h2>
-            <p className="text-xs text-[hsl(var(--muted-foreground))]">Расшифровка аудио в протокол судебного заседания</p>
+            <p className="text-xs text-[hsl(var(--muted-foreground))]">Расшифровка аудио через Whisper AI → структурированный протокол</p>
           </div>
         </div>
       </div>
@@ -475,17 +539,31 @@ function StenographySection() {
           <div className="bg-amber-50 border border-amber-200 rounded-sm px-4 py-3 flex gap-3">
             <Icon name="Info" size={16} className="text-amber-600 flex-shrink-0 mt-0.5" />
             <p className="text-xs text-amber-700 leading-relaxed">
-              Система автоматически распознаёт речь участников заседания, разделяет реплики и формирует структурированный протокол с временными метками.
+              Whisper AI распознаёт русскую речь, GPT-4o определяет участников и формирует официальный протокол заседания с временными метками.
             </p>
           </div>
 
-          {!uploaded ? (
-            <div className="upload-zone rounded-sm p-10 text-center cursor-pointer" onClick={handleUpload}>
+          {/* Upload zone */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="audio/*,.mp3,.wav,.m4a,.ogg,.flac,.webm"
+            className="hidden"
+            onChange={handleInputChange}
+          />
+
+          {!file ? (
+            <div
+              className="upload-zone rounded-sm p-10 text-center cursor-pointer"
+              onClick={() => fileInputRef.current?.click()}
+              onDrop={handleDrop}
+              onDragOver={(e) => e.preventDefault()}
+            >
               <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
                 <Icon name="Mic" size={28} className="text-amber-600" />
               </div>
               <p className="font-semibold text-[hsl(var(--navy))] mb-1">Загрузите аудиозапись</p>
-              <p className="text-sm text-[hsl(var(--muted-foreground))]">MP3, WAV, M4A, OGG — до 500 МБ</p>
+              <p className="text-sm text-[hsl(var(--muted-foreground))]">MP3, WAV, M4A, OGG, FLAC — до 25 МБ</p>
               <p className="text-xs text-[hsl(var(--muted-foreground))] mt-3">Нажмите или перетащите файл сюда</p>
             </div>
           ) : (
@@ -495,68 +573,75 @@ function StenographySection() {
                   <Icon name="FileAudio" size={15} className="text-amber-600" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-[hsl(var(--navy))] truncate">audio_zasedanie_2024.mp3</p>
-                  <p className="text-xs text-[hsl(var(--muted-foreground))]">128 МБ · 01:24:37</p>
+                  <p className="text-sm font-medium text-[hsl(var(--navy))] truncate">{file.name}</p>
+                  <p className="text-xs text-[hsl(var(--muted-foreground))]">{formatSize(file.size)}</p>
                 </div>
                 {processing && <Icon name="Loader" size={16} className="text-amber-600 animate-spin" />}
-                {done && <Icon name="CheckCircle" size={16} className="text-emerald-600" />}
+                {entries.length > 0 && !processing && <Icon name="CheckCircle" size={16} className="text-emerald-600" />}
               </div>
 
               {processing && (
                 <div className="animate-fade-in">
                   <div className="flex justify-between text-xs text-[hsl(var(--muted-foreground))] mb-1">
-                    <span>Распознавание речи...</span>
-                    <span>67%</span>
+                    <span>Whisper AI расшифровывает речь...</span>
                   </div>
                   <div className="h-1.5 bg-[hsl(var(--muted))] rounded-full overflow-hidden">
-                    <div className="h-full bg-amber-500 rounded-full" style={{ width: "67%", transition: "width 2s ease" }} />
+                    <div className="h-full bg-amber-500 rounded-full animate-pulse" style={{ width: "100%" }} />
                   </div>
+                  <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">Обычно занимает 20–60 секунд</p>
                 </div>
               )}
             </div>
           )}
 
-          {done && (
-            <div className="flex gap-2 animate-fade-in">
-              <button className="flex-1 py-2.5 bg-[hsl(var(--navy))] text-white text-sm font-medium rounded-sm hover:bg-[hsl(var(--navy-mid))] transition-colors flex items-center justify-center gap-2">
-                <Icon name="Download" size={15} /> Скачать протокол
-              </button>
-              <button className="px-4 py-2.5 border border-[hsl(var(--border))] text-sm rounded-sm hover:bg-[hsl(var(--muted))] transition-colors">
-                <Icon name="RefreshCw" size={15} />
-              </button>
+          {error && (
+            <div className="px-3 py-2 bg-red-50 border border-red-200 rounded-sm flex items-center gap-2 text-xs text-red-700">
+              <Icon name="AlertCircle" size={13} />
+              {error}
             </div>
           )}
+
+          <div className="flex gap-2">
+            {file && !processing && entries.length === 0 && (
+              <button
+                onClick={process}
+                className="flex-1 py-2.5 bg-[hsl(var(--navy))] text-white text-sm font-medium rounded-sm hover:bg-[hsl(var(--navy-mid))] transition-colors flex items-center justify-center gap-2"
+              >
+                <Icon name="Sparkles" size={15} /> Расшифровать
+              </button>
+            )}
+            {entries.length > 0 && (
+              <button
+                onClick={copyProtocol}
+                className="flex-1 py-2.5 bg-[hsl(var(--navy))] text-white text-sm font-medium rounded-sm hover:bg-[hsl(var(--navy-mid))] transition-colors flex items-center justify-center gap-2"
+              >
+                <Icon name="Copy" size={15} /> Копировать протокол
+              </button>
+            )}
+            {file && (
+              <button
+                onClick={reset}
+                className="px-4 py-2.5 border border-[hsl(var(--border))] text-sm rounded-sm hover:bg-[hsl(var(--muted))] transition-colors"
+              >
+                <Icon name="RefreshCw" size={15} />
+              </button>
+            )}
+          </div>
         </div>
 
+        {/* Result panel */}
         <div>
           <label className="block text-xs font-semibold text-[hsl(var(--navy))] uppercase tracking-wider mb-2">
             Протокол судебного заседания
           </label>
-          {done ? (
-            <div className="bg-white border border-[hsl(var(--border))] rounded-sm p-5 text-sm leading-relaxed animate-fade-in space-y-3 max-h-96 overflow-y-auto">
+          {entries.length > 0 ? (
+            <div className="bg-white border border-[hsl(var(--border))] rounded-sm p-5 animate-fade-in space-y-3 max-h-[520px] overflow-y-auto">
               <p className="text-center text-xs font-bold uppercase tracking-widest text-[hsl(var(--navy))] pb-2 border-b border-[hsl(var(--border))]">
                 ПРОТОКОЛ СУДЕБНОГО ЗАСЕДАНИЯ
               </p>
-              {[
-                {
-                  time: "09:00",
-                  speaker: "Председательствующий",
-                  text: "Судебное заседание объявляется открытым. Слушается дело №...",
-                },
-                { time: "09:02", speaker: "Секретарь", text: "Явка сторон проверена. Истец присутствует, ответчик присутствует." },
-                {
-                  time: "09:03",
-                  speaker: "Председательствующий",
-                  text: "Суду необходимо разъяснить сторонам их права и обязанности согласно ст. 35 ГПК РФ...",
-                },
-                {
-                  time: "09:07",
-                  speaker: "Представитель истца",
-                  text: "[Текст будет сгенерирован через Whisper AI при подключении API-ключа]",
-                },
-              ].map((entry, i) => (
-                <div key={i} className="flex gap-3 animate-fade-in">
-                  <span className="text-xs font-mono-ru text-[hsl(var(--muted-foreground))] flex-shrink-0 mt-0.5">{entry.time}</span>
+              {entries.map((entry, i) => (
+                <div key={i} className="flex gap-3 animate-fade-in" style={{ animationDelay: `${i * 0.04}s` }}>
+                  <span className="text-xs font-mono-ru text-[hsl(var(--muted-foreground))] flex-shrink-0 mt-0.5 w-10">{entry.time}</span>
                   <div>
                     <span className="text-xs font-semibold text-[hsl(var(--navy))]">{entry.speaker}: </span>
                     <span className="text-xs text-[hsl(var(--foreground))]">{entry.text}</span>
@@ -566,9 +651,18 @@ function StenographySection() {
             </div>
           ) : (
             <div className="bg-[hsl(var(--surface))] border border-dashed border-[hsl(var(--border))] rounded-sm min-h-64 flex flex-col items-center justify-center text-center p-8">
-              <Icon name="FileText" size={36} className="text-[hsl(var(--muted-foreground))] mb-3 opacity-40" />
-              <p className="text-sm text-[hsl(var(--muted-foreground))]">Протокол появится здесь</p>
-              <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">После загрузки и обработки аудиофайла</p>
+              {processing ? (
+                <>
+                  <Icon name="Loader" size={32} className="text-amber-500 mb-3 animate-spin" />
+                  <p className="text-sm text-[hsl(var(--muted-foreground))]">Формирую протокол...</p>
+                </>
+              ) : (
+                <>
+                  <Icon name="FileText" size={36} className="text-[hsl(var(--muted-foreground))] mb-3 opacity-40" />
+                  <p className="text-sm text-[hsl(var(--muted-foreground))]">Протокол появится здесь</p>
+                  <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">После загрузки и обработки аудиофайла</p>
+                </>
+              )}
             </div>
           )}
         </div>
