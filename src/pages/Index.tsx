@@ -1255,6 +1255,259 @@ function ProfilePanel({
   );
 }
 
+type AuthStep = "select" | "pin" | "success";
+
+function AuthScreen({ onAuth }: { onAuth: () => void }) {
+  const [step, setStep] = useState<AuthStep>("select");
+  const [certFile, setCertFile] = useState<File | null>(null);
+  const [pin, setPin] = useState("");
+  const [pinError, setPinError] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [mediaType, setMediaType] = useState<"file" | "token" | null>(null);
+  const certInputRef = useRef<HTMLInputElement>(null);
+
+  const handleCertFile = (f: File) => {
+    setCertFile(f);
+    setMediaType("file");
+  };
+
+  const handleToken = () => {
+    setMediaType("token");
+    setCertFile(null);
+  };
+
+  const handleNext = () => {
+    if (!mediaType) return;
+    setStep("pin");
+  };
+
+  const handleVerify = () => {
+    if (pin.length < 4) { setPinError(true); return; }
+    setPinError(false);
+    setLoading(true);
+    setTimeout(() => {
+      setLoading(false);
+      setStep("success");
+      setTimeout(onAuth, 1800);
+    }, 2000);
+  };
+
+  return (
+    <div className="min-h-screen bg-[hsl(var(--navy))] flex flex-col items-center justify-center px-4 relative overflow-hidden" style={{ fontFamily: "'Golos Text', sans-serif" }}>
+      {/* Background pattern */}
+      <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "repeating-linear-gradient(45deg, white 0, white 1px, transparent 0, transparent 50%)", backgroundSize: "24px 24px" }} />
+
+      {/* Top stripe */}
+      <div className="absolute top-0 left-0 right-0 h-1 emblem-stripe" />
+
+      <div className="relative w-full max-w-md">
+        {/* Logo */}
+        <div className="text-center mb-8 animate-fade-in">
+          <div className="w-16 h-16 rounded-full bg-[hsl(var(--gold))] flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <Icon name="Scale" size={28} className="text-white" />
+          </div>
+          <h1 className="text-white font-bold text-xl tracking-tight">ГАС «Судопроизводство 1.0»</h1>
+          <p className="text-white/50 text-xs mt-1 font-mono-ru tracking-widest uppercase">Автоматизированная информационная система</p>
+        </div>
+
+        {/* Card */}
+        <div className="bg-white rounded-sm shadow-2xl overflow-hidden animate-scale-in">
+          {/* Card header */}
+          <div className="px-6 pt-6 pb-4 border-b border-[hsl(var(--border))]">
+            <div className="flex items-center gap-2 mb-1">
+              <Icon name="ShieldCheck" size={16} className="text-[hsl(var(--navy))]" />
+              <h2 className="font-bold text-[hsl(var(--navy))] text-base">Вход в систему</h2>
+            </div>
+            <p className="text-xs text-[hsl(var(--muted-foreground))]">Авторизация по УКЭП / ЭЦП обязательна</p>
+          </div>
+
+          {/* Steps indicator */}
+          <div className="px-6 pt-4 pb-0">
+            <div className="flex items-center gap-2 mb-5">
+              {[
+                { id: "select", label: "Носитель" },
+                { id: "pin", label: "PIN-код" },
+                { id: "success", label: "Вход" },
+              ].map((s, i) => {
+                const steps = ["select", "pin", "success"];
+                const currentIdx = steps.indexOf(step);
+                const sIdx = steps.indexOf(s.id);
+                const done = sIdx < currentIdx;
+                const active = sIdx === currentIdx;
+                return (
+                  <div key={s.id} className="flex items-center flex-1">
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${done ? "bg-emerald-500 text-white" : active ? "bg-[hsl(var(--navy))] text-white" : "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]"}`}>
+                        {done ? <Icon name="Check" size={11} /> : i + 1}
+                      </div>
+                      <span className={`text-xs font-medium ${active ? "text-[hsl(var(--navy))]" : done ? "text-emerald-600" : "text-[hsl(var(--muted-foreground))]"}`}>{s.label}</span>
+                    </div>
+                    {i < 2 && <div className={`flex-1 h-px mx-2 ${done ? "bg-emerald-400" : "bg-[hsl(var(--border))]"}`} />}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="px-6 pb-6">
+            {/* Step 1: select media */}
+            {step === "select" && (
+              <div className="space-y-4 animate-fade-in">
+                <p className="text-xs text-[hsl(var(--muted-foreground))] leading-relaxed">
+                  Выберите способ подключения электронной подписи. Убедитесь, что носитель подключён к компьютеру.
+                </p>
+
+                <input ref={certInputRef} type="file" accept=".cer,.crt,.p12,.pfx,.pem,.key" className="hidden"
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) handleCertFile(f); }} />
+
+                <div className="space-y-2">
+                  {/* File cert */}
+                  <button
+                    onClick={() => certInputRef.current?.click()}
+                    className={`w-full flex items-center gap-4 px-4 py-3.5 border rounded-sm transition-all text-left ${mediaType === "file" ? "border-[hsl(var(--navy))] bg-blue-50" : "border-[hsl(var(--border))] hover:border-[hsl(var(--navy))] bg-white"}`}
+                  >
+                    <div className={`w-9 h-9 rounded flex items-center justify-center flex-shrink-0 ${mediaType === "file" ? "bg-[hsl(var(--navy))]" : "bg-[hsl(var(--muted))]"}`}>
+                      <Icon name="FileKey" size={18} className={mediaType === "file" ? "text-white" : "text-[hsl(var(--muted-foreground))]"} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-semibold ${mediaType === "file" ? "text-[hsl(var(--navy))]" : "text-[hsl(var(--foreground))]"}`}>
+                        Файловый сертификат
+                      </p>
+                      <p className="text-xs text-[hsl(var(--muted-foreground))] truncate">
+                        {certFile ? certFile.name : ".cer, .crt, .p12, .pfx, .pem"}
+                      </p>
+                    </div>
+                    {mediaType === "file" && <Icon name="CheckCircle" size={16} className="text-emerald-500 flex-shrink-0" />}
+                  </button>
+
+                  {/* Token */}
+                  <button
+                    onClick={handleToken}
+                    className={`w-full flex items-center gap-4 px-4 py-3.5 border rounded-sm transition-all text-left ${mediaType === "token" ? "border-[hsl(var(--navy))] bg-blue-50" : "border-[hsl(var(--border))] hover:border-[hsl(var(--navy))] bg-white"}`}
+                  >
+                    <div className={`w-9 h-9 rounded flex items-center justify-center flex-shrink-0 ${mediaType === "token" ? "bg-[hsl(var(--navy))]" : "bg-[hsl(var(--muted))]"}`}>
+                      <Icon name="UsbIcon" fallback="Cpu" size={18} className={mediaType === "token" ? "text-white" : "text-[hsl(var(--muted-foreground))]"} />
+                    </div>
+                    <div className="flex-1">
+                      <p className={`text-sm font-semibold ${mediaType === "token" ? "text-[hsl(var(--navy))]" : "text-[hsl(var(--foreground))]"}`}>
+                        USB-токен / Смарт-карта
+                      </p>
+                      <p className="text-xs text-[hsl(var(--muted-foreground))]">Рутокен, JaCarta, eToken</p>
+                    </div>
+                    {mediaType === "token" && <Icon name="CheckCircle" size={16} className="text-emerald-500 flex-shrink-0" />}
+                  </button>
+                </div>
+
+                <div className="flex items-start gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-sm">
+                  <Icon name="Info" size={14} className="text-amber-600 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-amber-700 leading-relaxed">
+                    Для работы с USB-токенами необходима установка КриптоПро CSP версии 5.0 и выше.
+                  </p>
+                </div>
+
+                <button
+                  onClick={handleNext}
+                  disabled={!mediaType}
+                  className="w-full py-3 bg-[hsl(var(--navy))] text-white font-semibold text-sm rounded-sm hover:bg-[hsl(var(--navy-mid))] transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
+                >
+                  Далее <Icon name="ArrowRight" size={15} />
+                </button>
+              </div>
+            )}
+
+            {/* Step 2: PIN */}
+            {step === "pin" && (
+              <div className="space-y-4 animate-fade-in">
+                <div className="flex items-center gap-3 px-3 py-2.5 bg-[hsl(var(--surface))] border border-[hsl(var(--border))] rounded-sm">
+                  <Icon name={mediaType === "file" ? "FileKey" : "Cpu"} size={15} className="text-[hsl(var(--navy))] flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-[hsl(var(--navy))]">
+                      {mediaType === "file" ? (certFile?.name ?? "Сертификат") : "USB-токен / Смарт-карта"}
+                    </p>
+                    <p className="text-xs text-emerald-600">Носитель определён</p>
+                  </div>
+                  <Icon name="CheckCircle" size={14} className="text-emerald-500" />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-[hsl(var(--navy))] uppercase tracking-wider mb-2">
+                    PIN-код электронной подписи
+                  </label>
+                  <input
+                    type="password"
+                    value={pin}
+                    onChange={(e) => { setPin(e.target.value); setPinError(false); }}
+                    onKeyDown={(e) => e.key === "Enter" && handleVerify()}
+                    placeholder="Введите PIN-код"
+                    maxLength={32}
+                    className={`w-full px-4 py-3 text-sm border rounded-sm bg-[hsl(var(--surface))] focus:outline-none focus:ring-1 tracking-widest ${pinError ? "border-red-400 focus:border-red-400 focus:ring-red-400" : "border-[hsl(var(--border))] focus:border-[hsl(var(--navy))] focus:ring-[hsl(var(--navy))]"}`}
+                  />
+                  {pinError && (
+                    <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                      <Icon name="AlertCircle" size={12} /> Введите корректный PIN-код (минимум 4 символа)
+                    </p>
+                  )}
+                  <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1.5">
+                    PIN-код не передаётся и не сохраняется в системе
+                  </p>
+                </div>
+
+                <div className="flex items-start gap-2 px-3 py-2.5 bg-[hsl(var(--surface))] border border-[hsl(var(--border))] rounded-sm">
+                  <Icon name="Lock" size={14} className="text-[hsl(var(--muted-foreground))] flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-[hsl(var(--muted-foreground))] leading-relaxed">
+                    Соединение защищено по протоколу ГОСТ TLS. Данные передаются в зашифрованном виде.
+                  </p>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => { setStep("select"); setPin(""); }}
+                    className="px-4 py-3 border border-[hsl(var(--border))] text-sm rounded-sm hover:bg-[hsl(var(--muted))] transition-colors text-[hsl(var(--muted-foreground))]"
+                  >
+                    <Icon name="ArrowLeft" size={15} />
+                  </button>
+                  <button
+                    onClick={handleVerify}
+                    disabled={!pin || loading}
+                    className="flex-1 py-3 bg-[hsl(var(--navy))] text-white font-semibold text-sm rounded-sm hover:bg-[hsl(var(--navy-mid))] transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
+                  >
+                    {loading
+                      ? <><Icon name="Loader" size={15} className="animate-spin" /> Проверка подписи...</>
+                      : <><Icon name="ShieldCheck" size={15} /> Подтвердить вход</>
+                    }
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Step 3: success */}
+            {step === "success" && (
+              <div className="py-4 text-center animate-fade-in space-y-3">
+                <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center mx-auto">
+                  <Icon name="ShieldCheck" size={28} className="text-emerald-600" />
+                </div>
+                <div>
+                  <p className="font-bold text-[hsl(var(--navy))] text-base">Подпись верифицирована</p>
+                  <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">Выполняется вход в систему...</p>
+                </div>
+                <div className="flex items-center justify-center gap-2 text-xs text-emerald-600">
+                  <Icon name="Loader" size={13} className="animate-spin" />
+                  Загрузка рабочего пространства
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Footer note */}
+        <p className="text-center text-white/30 text-xs mt-6 font-mono-ru">
+          Использование системы возможно только уполномоченными лицами
+        </p>
+      </div>
+    </div>
+  );
+}
+
 const SUPPORT_CATEGORIES = [
   "Технический сбой",
   "Ошибка в данных дела",
@@ -1506,12 +1759,15 @@ function SupportModal({ onClose, profile }: { onClose: () => void; profile: User
 }
 
 export default function Index() {
+  const [isAuthed, setIsAuthed] = useState(false);
   const [active, setActive] = useState<Section>("home");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [profileOpen, setProfileOpen] = useState(false);
   const [supportOpen, setSupportOpen] = useState(false);
   const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
   const [judges, setJudges] = useState<JudgeItem[]>(INIT_JUDGES);
+
+  if (!isAuthed) return <AuthScreen onAuth={() => setIsAuthed(true)} />;
 
   const syncProfileToJudges = (p: UserProfile) => {
     const parts = p.name.trim().split(/\s+/);
