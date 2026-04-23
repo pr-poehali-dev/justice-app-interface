@@ -87,12 +87,12 @@ function HomePage({ onNavigate }: { onNavigate: (s: Section) => void }) {
           </p>
           <div className="flex items-center gap-6 mt-6 flex-wrap">
             <div className="text-center">
-              <div className="text-2xl font-bold text-[hsl(var(--gold))]">1 842</div>
+              <div className="text-2xl font-bold text-[hsl(var(--gold))]">415</div>
               <div className="text-xs text-white/50 mt-0.5 leading-tight">Поступило дел<br/>с начала года</div>
             </div>
             <div className="w-px h-12 bg-white/10" />
             <div className="text-center">
-              <div className="text-2xl font-bold text-emerald-400">1 374</div>
+              <div className="text-2xl font-bold text-emerald-400">192</div>
               <div className="text-xs text-white/50 mt-0.5 leading-tight">Рассмотрено<br/>с начала года</div>
             </div>
             <div className="w-px h-12 bg-white/10" />
