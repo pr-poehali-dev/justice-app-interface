@@ -108,7 +108,7 @@ function HomePage({ onNavigate }: { onNavigate: (s: Section) => void }) {
             <span className="w-2 h-2 rounded-full bg-[hsl(var(--gold))] status-dot" />
             <span className="text-xs text-[hsl(var(--gold))]">Система активна</span>
           </div>
-          <h1 className="text-3xl font-bold mb-2 tracking-tight">ГАС «Судопроизводство 1.0»</h1>
+          <h1 className="text-3xl font-bold mb-2 tracking-tight">ГАС «Судопроизводство»</h1>
           <p className="text-white/60 text-sm max-w-xl leading-relaxed">
             Автоматизированная информационная система поддержки судопроизводства с применением технологий искусственного интеллекта
           </p>
@@ -1390,7 +1390,7 @@ function ProfilePanel({
                     <Icon name="Shield" size={14} className="text-[hsl(var(--muted-foreground))]" />
                     <div className="flex-1">
                       <p className="text-xs font-medium text-[hsl(var(--navy))]">Версия системы</p>
-                      <p className="text-xs text-[hsl(var(--muted-foreground))]">ГАС Судопроизводство 1.0</p>
+                      <p className="text-xs text-[hsl(var(--muted-foreground))]">ГАС Судопроизводство</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3 px-3 py-2.5 bg-[hsl(var(--surface))] border border-[hsl(var(--border))] rounded-sm">
@@ -1468,7 +1468,7 @@ function AuthScreen({ onAuth }: { onAuth: () => void }) {
           <div className="w-16 h-16 rounded-full bg-[hsl(var(--gold))] flex items-center justify-center mx-auto mb-4 shadow-lg">
             <Icon name="Scale" size={28} className="text-white" />
           </div>
-          <h1 className="text-white font-bold text-xl tracking-tight">ГАС «Судопроизводство 1.0»</h1>
+          <h1 className="text-white font-bold text-xl tracking-tight">ГАС «Судопроизводство»</h1>
           <p className="text-white/50 text-xs mt-1 font-mono-ru tracking-widest uppercase">Автоматизированная информационная система</p>
         </div>
 
@@ -2739,7 +2739,7 @@ export default function Index() {
 
         <footer className="bg-white border-t border-[hsl(var(--border))] px-8 py-3 flex items-center justify-between">
           <span className="text-xs text-[hsl(var(--muted-foreground))] font-mono-ru">
-            ГАС «Судопроизводство 1.0»
+            ГАС «Судопроизводство»
           </span>
           <button
             onClick={() => setSupportOpen(true)}
@@ -2748,7 +2748,7 @@ export default function Index() {
             <Icon name="Headphones" size={13} />
             Техническая поддержка
           </button>
-          <span className="text-xs text-[hsl(var(--muted-foreground))]">{new Date().getFullYear()} · v1.0</span>
+          <span className="text-xs text-[hsl(var(--muted-foreground))]">{new Date().getFullYear()}</span>
         </footer>
 
         {supportOpen && <SupportModal onClose={() => setSupportOpen(false)} profile={profile} />}
