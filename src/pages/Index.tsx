@@ -671,102 +671,168 @@ function StenographySection() {
   );
 }
 
-const CASES = [
-  { id: "22-12345/2024", type: "Гражданское", subject: "Взыскание долга", complexity: "Средняя", status: "new", judge: null as string | null },
-  { id: "22-12346/2024", type: "Административное", subject: "Оспаривание решения", complexity: "Высокая", status: "new", judge: null as string | null },
+const DISTRIBUTE_URL = "https://functions.poehali.dev/7efc782e-0135-4df2-aa35-7f29bcc87264";
+
+type CaseItem = {
+  id: string; type: string; subject: string; complexity: string;
+  status: string; judge: string | null; reason?: string;
+};
+
+type JudgeItem = {
+  name: string; load: number;
+  spec: string[]; complexSpec: string[];
+  onVacation: boolean; onSickLeave: boolean;
+  staffOnVacation: boolean; staffOnSickLeave: boolean;
+};
+
+const INIT_CASES: CaseItem[] = [
+  { id: "22-12345/2024", type: "Гражданское", subject: "Взыскание долга", complexity: "Средняя", status: "new", judge: null },
+  { id: "22-12346/2024", type: "Административное", subject: "Оспаривание решения УФАС", complexity: "Высокая", status: "new", judge: null },
   { id: "22-12347/2024", type: "Гражданское", subject: "Раздел имущества", complexity: "Высокая", status: "assigned", judge: "Иванов А.В." },
   { id: "22-12348/2024", type: "Уголовное", subject: "Мошенничество (ст. 159)", complexity: "Высокая", status: "assigned", judge: "Петрова С.М." },
-  { id: "22-12349/2024", type: "Гражданское", subject: "Трудовой спор", complexity: "Низкая", status: "new", judge: null as string | null },
+  { id: "22-12349/2024", type: "Гражданское", subject: "Трудовой спор", complexity: "Низкая", status: "new", judge: null },
+  { id: "22-12350/2024", type: "Уголовное", subject: "Организованная преступность (ст. 210)", complexity: "Особо сложное", status: "new", judge: null },
 ];
 
-const JUDGES = [
-  { name: "Иванов А.В.", load: 78, spec: ["Гражданское", "Административное"] },
-  { name: "Петрова С.М.", load: 45, spec: ["Уголовное", "Гражданское"] },
-  { name: "Сидоров К.П.", load: 62, spec: ["Административное"] },
-  { name: "Козлова Е.Р.", load: 30, spec: ["Гражданское", "Уголовное"] },
+const INIT_JUDGES: JudgeItem[] = [
+  { name: "Иванов А.В.", load: 78, spec: ["Гражданское", "Административное"], complexSpec: ["Корпоративные споры"], onVacation: false, onSickLeave: false, staffOnVacation: false, staffOnSickLeave: false },
+  { name: "Петрова С.М.", load: 45, spec: ["Уголовное", "Гражданское"], complexSpec: ["Организованная преступность", "Коррупция"], onVacation: false, onSickLeave: false, staffOnVacation: false, staffOnSickLeave: false },
+  { name: "Сидоров К.П.", load: 62, spec: ["Административное"], complexSpec: [], onVacation: true, onSickLeave: false, staffOnVacation: false, staffOnSickLeave: false },
+  { name: "Козлова Е.Р.", load: 30, spec: ["Гражданское", "Уголовное"], complexSpec: ["Организованная преступность"], onVacation: false, onSickLeave: false, staffOnVacation: false, staffOnSickLeave: true },
 ];
 
 function DistributionSection() {
-  const [cases, setCases] = useState(CASES);
+  const [cases, setCases] = useState<CaseItem[]>(INIT_CASES);
+  const [judges, setJudges] = useState<JudgeItem[]>(INIT_JUDGES);
   const [distributing, setDistributing] = useState(false);
-
-  const distribute = () => {
-    setDistributing(true);
-    setTimeout(() => {
-      setCases((prev) =>
-        prev.map((c) => {
-          if (c.status === "assigned") return c;
-          const suitable = JUDGES.filter((j) => j.spec.includes(c.type) && j.load < 80);
-          const judge = suitable.sort((a, b) => a.load - b.load)[0];
-          return judge ? { ...c, status: "assigned", judge: judge.name } : c;
-        })
-      );
-      setDistributing(false);
-    }, 2000);
-  };
+  const [reasoning, setReasoning] = useState("");
+  const [error, setError] = useState("");
+  const [editingJudge, setEditingJudge] = useState<string | null>(null);
 
   const complexityColor: Record<string, string> = {
-    Высокая: "bg-red-50 text-red-700 border-red-200",
-    Средняя: "bg-amber-50 text-amber-700 border-amber-200",
-    Низкая: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    "Особо сложное": "bg-purple-50 text-purple-700 border-purple-200",
+    "Высокая": "bg-red-50 text-red-700 border-red-200",
+    "Средняя": "bg-amber-50 text-amber-700 border-amber-200",
+    "Низкая": "bg-emerald-50 text-emerald-700 border-emerald-200",
+  };
+
+  const distribute = async () => {
+    setDistributing(true);
+    setError("");
+    setReasoning("");
+
+    try {
+      const res = await fetch(DISTRIBUTE_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ judges, cases }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Ошибка сервера");
+
+      const assignments: { case_id: string; judge: string; reason: string }[] = data.assignments || [];
+      setCases((prev) =>
+        prev.map((c) => {
+          const a = assignments.find((x) => x.case_id === c.id);
+          return a ? { ...c, status: "assigned", judge: a.judge, reason: a.reason } : c;
+        })
+      );
+      setReasoning(data.reasoning || "");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Неизвестная ошибка");
+    } finally {
+      setDistributing(false);
+    }
+  };
+
+  const toggleJudge = (name: string, field: keyof JudgeItem) => {
+    setJudges((prev) =>
+      prev.map((j) => j.name === name ? { ...j, [field]: !j[field as keyof JudgeItem] } : j)
+    );
+  };
+
+  const resetCases = () => {
+    setCases(INIT_CASES);
+    setReasoning("");
+    setError("");
+  };
+
+  const statusIcon = (j: JudgeItem) => {
+    if (j.onSickLeave) return { label: "Болеет", color: "text-red-600 bg-red-50 border-red-200" };
+    if (j.onVacation) return { label: "Отпуск", color: "text-amber-600 bg-amber-50 border-amber-200" };
+    return { label: "Работает", color: "text-emerald-600 bg-emerald-50 border-emerald-200" };
   };
 
   return (
     <div className="animate-fade-in">
       <div className="px-8 py-6 border-b border-[hsl(var(--border))] bg-white">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded bg-violet-100 flex items-center justify-center">
+        <div className="flex items-center gap-3 flex-wrap gap-y-2">
+          <div className="w-8 h-8 rounded bg-violet-100 flex items-center justify-center flex-shrink-0">
             <Icon name="GitBranch" size={16} className="text-violet-700" />
           </div>
           <div>
             <h2 className="font-bold text-[hsl(var(--navy))] text-base">Распределение судебных дел</h2>
-            <p className="text-xs text-[hsl(var(--muted-foreground))]">ИИ-модуль автоматического распределения</p>
+            <p className="text-xs text-[hsl(var(--muted-foreground))]">ИИ-модуль с учётом нагрузки, отпусков, болезней и специализации</p>
           </div>
-          <button
-            onClick={distribute}
-            disabled={distributing}
-            className="ml-auto px-4 py-2 bg-[hsl(var(--navy))] text-white text-sm font-medium rounded-sm hover:bg-[hsl(var(--navy-mid))] transition-colors disabled:opacity-60 flex items-center gap-2"
-          >
-            {distributing ? <Icon name="Loader" size={14} className="animate-spin" /> : <Icon name="Zap" size={14} />}
-            {distributing ? "Распределение..." : "Авто-распределить"}
-          </button>
+          <div className="ml-auto flex gap-2">
+            <button
+              onClick={resetCases}
+              className="px-3 py-2 border border-[hsl(var(--border))] text-xs rounded-sm hover:bg-[hsl(var(--muted))] transition-colors flex items-center gap-1.5 text-[hsl(var(--muted-foreground))]"
+            >
+              <Icon name="RefreshCw" size={13} /> Сбросить
+            </button>
+            <button
+              onClick={distribute}
+              disabled={distributing}
+              className="px-4 py-2 bg-[hsl(var(--navy))] text-white text-sm font-medium rounded-sm hover:bg-[hsl(var(--navy-mid))] transition-colors disabled:opacity-60 flex items-center gap-2"
+            >
+              {distributing ? <Icon name="Loader" size={14} className="animate-spin" /> : <Icon name="Zap" size={14} />}
+              {distributing ? "ИИ распределяет..." : "Авто-распределить"}
+            </button>
+          </div>
         </div>
       </div>
 
+      {error && (
+        <div className="mx-8 mt-4 px-3 py-2 bg-red-50 border border-red-200 rounded-sm flex items-center gap-2 text-xs text-red-700">
+          <Icon name="AlertCircle" size={13} /> {error}
+        </div>
+      )}
+
       <div className="px-8 py-6 grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <div className="xl:col-span-2">
-          <h3 className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-widest mb-3">Очередь дел</h3>
+        {/* Cases table */}
+        <div className="xl:col-span-2 space-y-4">
+          <h3 className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-widest">Очередь дел</h3>
           <div className="bg-white border border-[hsl(var(--border))] rounded-sm overflow-hidden">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[hsl(var(--border))] bg-[hsl(var(--surface))]">
-                  {["Номер дела", "Категория", "Предмет", "Сложность", "Судья"].map((h) => (
-                    <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">
-                      {h}
-                    </th>
+                  {["Номер дела", "Категория", "Предмет", "Сложность", "Назначен"].map((h) => (
+                    <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {cases.map((c, i) => (
-                  <tr
-                    key={c.id}
-                    className="border-b border-[hsl(var(--border))] last:border-0 hover:bg-[hsl(var(--surface))] transition-colors"
-                    style={{ animationDelay: `${(i + 1) * 0.1}s` }}
-                  >
+                  <tr key={c.id} className="border-b border-[hsl(var(--border))] last:border-0 hover:bg-[hsl(var(--surface))] transition-colors group">
                     <td className="px-4 py-3">
                       <span className="font-mono-ru text-xs text-[hsl(var(--navy))] font-medium">{c.id}</span>
                     </td>
                     <td className="px-4 py-3 text-xs text-[hsl(var(--foreground))]">{c.type}</td>
                     <td className="px-4 py-3 text-xs text-[hsl(var(--foreground))]">{c.subject}</td>
                     <td className="px-4 py-3">
-                      <span className={`text-xs px-2 py-0.5 rounded border font-medium ${complexityColor[c.complexity]}`}>{c.complexity}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded border font-medium ${complexityColor[c.complexity] || complexityColor["Средняя"]}`}>{c.complexity}</span>
                     </td>
                     <td className="px-4 py-3">
                       {c.judge ? (
-                        <div className="flex items-center gap-1.5">
-                          <Icon name="UserCheck" size={12} className="text-emerald-600" />
-                          <span className="text-xs text-emerald-700 font-medium">{c.judge}</span>
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <Icon name="UserCheck" size={12} className="text-emerald-600 flex-shrink-0" />
+                            <span className="text-xs text-emerald-700 font-medium">{c.judge}</span>
+                          </div>
+                          {c.reason && (
+                            <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5 leading-tight">{c.reason}</p>
+                          )}
                         </div>
                       ) : (
                         <span className="text-xs text-[hsl(var(--muted-foreground))] italic">Не назначен</span>
@@ -777,43 +843,96 @@ function DistributionSection() {
               </tbody>
             </table>
           </div>
+
+          {reasoning && (
+            <div className="bg-violet-50 border border-violet-200 rounded-sm px-4 py-3 animate-fade-in">
+              <p className="text-xs font-semibold text-violet-800 mb-1">Логика ИИ-распределения:</p>
+              <p className="text-xs text-violet-700 leading-relaxed">{reasoning}</p>
+            </div>
+          )}
         </div>
 
+        {/* Judges panel */}
         <div>
-          <h3 className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-widest mb-3">Нагрузка судей</h3>
+          <h3 className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-widest mb-3">Состав суда</h3>
           <div className="space-y-3">
-            {JUDGES.map((j, i) => (
-              <div
-                key={j.name}
-                className="bg-white border border-[hsl(var(--border))] rounded-sm p-4 animate-fade-in"
-                style={{ animationDelay: `${(i + 1) * 0.1}s` }}
-              >
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-7 h-7 rounded-full bg-[hsl(var(--navy))] flex items-center justify-center text-white text-xs font-bold">
-                    {j.name.split(" ")[0][0]}
+            {judges.map((j, i) => {
+              const st = statusIcon(j);
+              const isEditing = editingJudge === j.name;
+              return (
+                <div key={j.name} className="bg-white border border-[hsl(var(--border))] rounded-sm p-4 animate-fade-in" style={{ animationDelay: `${i * 0.1}s` }}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0 ${j.onSickLeave || j.onVacation ? "bg-[hsl(var(--muted-foreground))]" : "bg-[hsl(var(--navy))]"}`}>
+                      {j.name.split(" ")[0][0]}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-[hsl(var(--navy))] truncate">{j.name}</p>
+                      <span className={`text-xs px-1.5 py-0.5 rounded border font-medium ${st.color}`}>{st.label}</span>
+                    </div>
+                    <button
+                      onClick={() => setEditingJudge(isEditing ? null : j.name)}
+                      className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--navy))] transition-colors"
+                    >
+                      <Icon name={isEditing ? "ChevronUp" : "Settings"} size={14} />
+                    </button>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-[hsl(var(--navy))] truncate">{j.name}</p>
-                    <p className="text-xs text-[hsl(var(--muted-foreground))]">{j.spec.join(", ")}</p>
+
+                  {/* Load bar */}
+                  <div className="mb-3">
+                    <div className="flex justify-between text-xs text-[hsl(var(--muted-foreground))] mb-1">
+                      <span>Нагрузка</span>
+                      <span className={`font-mono-ru font-bold ${j.load > 70 ? "text-red-600" : j.load > 50 ? "text-amber-600" : "text-emerald-600"}`}>{j.load}%</span>
+                    </div>
+                    <div className="h-1.5 bg-[hsl(var(--muted))] rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full transition-all duration-700 ${j.load > 70 ? "bg-red-500" : j.load > 50 ? "bg-amber-500" : "bg-emerald-500"}`} style={{ width: `${j.load}%` }} />
+                    </div>
                   </div>
-                  <span
-                    className={`text-xs font-mono-ru font-bold ${
-                      j.load > 70 ? "text-red-600" : j.load > 50 ? "text-amber-600" : "text-emerald-600"
-                    }`}
-                  >
-                    {j.load}%
-                  </span>
+
+                  {/* Specs */}
+                  <div className="flex flex-wrap gap-1 mb-2">
+                    {j.spec.map((s) => (
+                      <span key={s} className="text-xs px-1.5 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded">{s}</span>
+                    ))}
+                    {j.complexSpec.map((s) => (
+                      <span key={s} className="text-xs px-1.5 py-0.5 bg-purple-50 text-purple-700 border border-purple-200 rounded">★ {s}</span>
+                    ))}
+                  </div>
+
+                  {/* Staff indicators */}
+                  {(j.staffOnVacation || j.staffOnSickLeave) && (
+                    <div className="flex flex-wrap gap-1 mb-2">
+                      {j.staffOnVacation && <span className="text-xs px-1.5 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 rounded">Помощник в отпуске</span>}
+                      {j.staffOnSickLeave && <span className="text-xs px-1.5 py-0.5 bg-red-50 text-red-700 border border-red-200 rounded">Помощник болеет</span>}
+                    </div>
+                  )}
+
+                  {/* Editable toggles */}
+                  {isEditing && (
+                    <div className="border-t border-[hsl(var(--border))] pt-3 mt-2 space-y-2 animate-fade-in">
+                      <p className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider mb-2">Статус</p>
+                      {[
+                        { field: "onVacation" as keyof JudgeItem, label: "Судья в отпуске", icon: "Palmtree" },
+                        { field: "onSickLeave" as keyof JudgeItem, label: "Судья болеет", icon: "Thermometer" },
+                        { field: "staffOnVacation" as keyof JudgeItem, label: "Аппарат в отпуске", icon: "Users" },
+                        { field: "staffOnSickLeave" as keyof JudgeItem, label: "Аппарат болеет", icon: "HeartPulse" },
+                      ].map(({ field, label, icon }) => (
+                        <button
+                          key={field}
+                          onClick={() => toggleJudge(j.name, field)}
+                          className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-xs transition-colors ${
+                            j[field] ? "bg-red-50 text-red-700 border border-red-200" : "bg-[hsl(var(--surface))] text-[hsl(var(--muted-foreground))] border border-[hsl(var(--border))] hover:border-[hsl(var(--navy))]"
+                          }`}
+                        >
+                          <Icon name={icon} size={12} />
+                          <span className="flex-1 text-left">{label}</span>
+                          <Icon name={j[field] ? "ToggleRight" : "ToggleLeft"} size={16} />
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <div className="h-1.5 bg-[hsl(var(--muted))] rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-700 ${
-                      j.load > 70 ? "bg-red-500" : j.load > 50 ? "bg-amber-500" : "bg-emerald-500"
-                    }`}
-                    style={{ width: `${j.load}%` }}
-                  />
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
