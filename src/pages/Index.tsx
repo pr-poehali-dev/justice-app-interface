@@ -1674,10 +1674,10 @@ function RequestsSection() {
   const [comment, setComment] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [sendStatus, setSendStatus] = useState<SendStatus>("idle");
-  const [history, setHistory] = useState<{ id: string; recipient: string; docType: string; caseNumber: string; time: string; status: string }[]>([
-    { id: "ЗПР-00142", recipient: "ФССП России", docType: "Исполнительный лист", caseNumber: "22-10018/2025", time: "12.04.2025 09:14", status: "Доставлен" },
-    { id: "ЗПР-00139", recipient: "ФНС России", docType: "Судебный запрос", caseNumber: "22-10011/2025", time: "10.04.2025 14:32", status: "Доставлен" },
-    { id: "ЗПР-00137", recipient: "МВД России", docType: "Постановление суда", caseNumber: "22-10012/2025", time: "08.04.2025 11:05", status: "Ошибка" },
+  const [history, setHistory] = useState<{ id: string; recipient: string; docType: string; caseNumber: string; time: string; status: string; region?: string; subdivision?: string }[]>([
+    { id: "ЗПР-00142", recipient: "ФССП России", docType: "Исполнительный лист", caseNumber: "22-10018/2025", time: "12.04.2025 09:14", status: "Доставлен", region: "г. Москва", subdivision: "УФССП по ЦАО" },
+    { id: "ЗПР-00139", recipient: "ФНС России", docType: "Судебный запрос", caseNumber: "22-10011/2025", time: "10.04.2025 14:32", status: "Доставлен", region: "Московская область", subdivision: "" },
+    { id: "ЗПР-00137", recipient: "МВД России", docType: "Постановление суда", caseNumber: "22-10012/2025", time: "08.04.2025 11:05", status: "Ошибка", region: "г. Санкт-Петербург", subdivision: "ГУ МВД по г. СПб" },
   ]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -1698,6 +1698,8 @@ function RequestsSection() {
         caseNumber,
         time: new Date().toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }),
         status: "Доставлен",
+        region: region || undefined,
+        subdivision: subdivision || undefined,
       }, ...prev]);
     }, 5000);
   };
@@ -1996,6 +1998,11 @@ function RequestsSection() {
                   </span>
                 </div>
                 <p className="text-xs font-medium text-[hsl(var(--foreground))] truncate">{h.recipient}</p>
+                {(h.region || h.subdivision) && (
+                  <p className="text-xs text-[hsl(var(--navy))] truncate leading-tight">
+                    {[h.region, h.subdivision].filter(Boolean).join(" · ")}
+                  </p>
+                )}
                 <p className="text-xs text-[hsl(var(--muted-foreground))] truncate">{h.docType} · {h.caseNumber}</p>
                 <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1 font-mono-ru">{h.time}</p>
               </div>
