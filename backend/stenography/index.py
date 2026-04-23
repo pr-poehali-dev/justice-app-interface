@@ -32,7 +32,9 @@ def handler(event: dict, context) -> dict:
             'body': json.dumps({'error': 'Аудиофайл не передан'}, ensure_ascii=False)
         }
 
-    client = OpenAI(api_key=os.environ['OPENAI_API_KEY'])
+    api_key = os.environ.get('VSEGPT_API_KEY') or os.environ.get('OPENAI_API_KEY')
+    base_url = 'https://api.vsegpt.ru/v1' if os.environ.get('VSEGPT_API_KEY') else None
+    client = OpenAI(api_key=api_key, base_url=base_url)
 
     audio_bytes = base64.b64decode(audio_b64)
 
@@ -65,8 +67,9 @@ def handler(event: dict, context) -> dict:
 
 Верни ТОЛЬКО валидный JSON-массив, без пояснений."""
 
+    model = 'openai/gpt-4o-mini' if os.environ.get('VSEGPT_API_KEY') else 'gpt-4o-mini'
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model=model,
         messages=[{"role": "user", "content": format_prompt}],
         max_tokens=3000,
         temperature=0.1,

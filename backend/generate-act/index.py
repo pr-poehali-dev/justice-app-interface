@@ -30,7 +30,11 @@ def handler(event: dict, context) -> dict:
             'body': json.dumps({'error': 'Промт не передан'}, ensure_ascii=False)
         }
 
-    client = OpenAI(api_key=os.environ['OPENAI_API_KEY'])
+    api_key = os.environ.get('VSEGPT_API_KEY') or os.environ.get('OPENAI_API_KEY')
+    base_url = 'https://api.vsegpt.ru/v1' if os.environ.get('VSEGPT_API_KEY') else None
+    model = 'openai/gpt-4o' if os.environ.get('VSEGPT_API_KEY') else 'gpt-4o'
+
+    client = OpenAI(api_key=api_key, base_url=base_url)
 
     docs_section = ""
     if documents:
@@ -53,7 +57,7 @@ def handler(event: dict, context) -> dict:
     user_message = f"Составь проект судебного акта — {act_type.upper()}.\n\nОбстоятельства дела:\n{prompt}{docs_section}"
 
     response = client.chat.completions.create(
-        model="gpt-4o",
+        model=model,
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_message},
