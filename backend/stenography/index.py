@@ -33,10 +33,9 @@ def handler(event: dict, context) -> dict:
         }
 
     client = OpenAI(
-        api_key=os.environ['OPENAI_API_KEY'],
+        api_key=os.environ['VSEGPT_API_KEY'],
         base_url='https://api.vsegpt.ru/v1',
     )
-    # vsegpt proxy - works in Russia
 
     audio_bytes = base64.b64decode(audio_b64)
 

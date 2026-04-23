@@ -30,10 +30,9 @@ def handler(event: dict, context) -> dict:
         }
 
     client = OpenAI(
-        api_key=os.environ['OPENAI_API_KEY'],
+        api_key=os.environ['VSEGPT_API_KEY'],
         base_url='https://api.vsegpt.ru/v1',
     )
-    # vsegpt proxy - works in Russia
     model = 'openai/gpt-4o-mini'
 
     system_prompt = """Ты — специализированный ИИ-ассистент для поиска и анализа судебной практики в России.
