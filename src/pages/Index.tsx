@@ -1255,10 +1255,178 @@ function ProfilePanel({
   );
 }
 
+const SUPPORT_CATEGORIES = [
+  "Технический сбой",
+  "Ошибка в данных дела",
+  "Проблема с модулем ИИ",
+  "Вопрос по работе системы",
+  "Запрос на доработку",
+  "Другое",
+];
+
+function SupportModal({ onClose }: { onClose: () => void }) {
+  const [category, setCategory] = useState("");
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
+  const [priority, setPriority] = useState<"normal" | "high" | "critical">("normal");
+  const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
+
+  const handleSend = () => {
+    if (!category || !subject || !message) return;
+    setSending(true);
+    setTimeout(() => {
+      setSending(false);
+      setSent(true);
+    }, 1200);
+  };
+
+  const ticketNum = `ТП-${Date.now().toString().slice(-6)}`;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
+      <div
+        className="w-full max-w-lg bg-white rounded-sm shadow-2xl animate-scale-in mx-4"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="bg-[hsl(var(--navy))] px-6 py-5 flex items-center justify-between rounded-t-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded bg-[hsl(var(--gold))] flex items-center justify-center">
+              <Icon name="Headphones" size={16} className="text-white" />
+            </div>
+            <div>
+              <p className="text-white font-bold text-sm">Служба технической поддержки</p>
+              <p className="text-white/50 text-xs">АИС поддержки судопроизводства</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="text-white/50 hover:text-white transition-colors">
+            <Icon name="X" size={18} />
+          </button>
+        </div>
+
+        {sent ? (
+          <div className="px-6 py-10 text-center animate-fade-in">
+            <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
+              <Icon name="CheckCircle" size={28} className="text-emerald-600" />
+            </div>
+            <h3 className="font-bold text-[hsl(var(--navy))] text-base mb-1">Обращение отправлено</h3>
+            <p className="text-sm text-[hsl(var(--muted-foreground))] mb-3">Ваш запрос принят в обработку</p>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[hsl(var(--surface))] border border-[hsl(var(--border))] rounded-sm">
+              <Icon name="Hash" size={13} className="text-[hsl(var(--muted-foreground))]" />
+              <span className="text-xs font-mono-ru font-medium text-[hsl(var(--navy))]">{ticketNum}</span>
+            </div>
+            <p className="text-xs text-[hsl(var(--muted-foreground))] mt-3">Сохраните номер обращения для отслеживания статуса</p>
+            <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">Ответ поступит в течение 1 рабочего дня</p>
+            <button
+              onClick={onClose}
+              className="mt-6 px-6 py-2.5 bg-[hsl(var(--navy))] text-white text-sm font-medium rounded-sm hover:bg-[hsl(var(--navy-mid))] transition-colors"
+            >
+              Закрыть
+            </button>
+          </div>
+        ) : (
+          <div className="px-6 py-5 space-y-4">
+            {/* Priority */}
+            <div>
+              <label className="block text-xs font-semibold text-[hsl(var(--navy))] uppercase tracking-wider mb-2">Приоритет</label>
+              <div className="flex gap-2">
+                {([
+                  { id: "normal", label: "Обычный", color: "emerald" },
+                  { id: "high", label: "Высокий", color: "amber" },
+                  { id: "critical", label: "Критический", color: "red" },
+                ] as const).map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => setPriority(p.id)}
+                    className={`flex-1 py-1.5 text-xs font-medium rounded-sm border transition-colors ${
+                      priority === p.id
+                        ? p.color === "emerald" ? "bg-emerald-600 text-white border-emerald-600"
+                          : p.color === "amber" ? "bg-amber-500 text-white border-amber-500"
+                          : "bg-red-600 text-white border-red-600"
+                        : "bg-white text-[hsl(var(--muted-foreground))] border-[hsl(var(--border))] hover:border-[hsl(var(--navy))]"
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Category */}
+            <div>
+              <label className="block text-xs font-semibold text-[hsl(var(--navy))] uppercase tracking-wider mb-2">Категория обращения</label>
+              <div className="flex flex-wrap gap-1.5">
+                {SUPPORT_CATEGORIES.map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => setCategory(c)}
+                    className={`text-xs px-2.5 py-1 rounded-sm border transition-colors ${
+                      category === c
+                        ? "bg-[hsl(var(--navy))] text-white border-[hsl(var(--navy))]"
+                        : "bg-[hsl(var(--surface))] text-[hsl(var(--muted-foreground))] border-[hsl(var(--border))] hover:border-[hsl(var(--navy))]"
+                    }`}
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Subject */}
+            <div>
+              <label className="block text-xs font-semibold text-[hsl(var(--navy))] uppercase tracking-wider mb-2">Тема обращения</label>
+              <input
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                placeholder="Кратко опишите проблему..."
+                className="w-full px-3 py-2.5 text-sm border border-[hsl(var(--border))] rounded-sm bg-[hsl(var(--surface))] focus:outline-none focus:border-[hsl(var(--navy))] focus:ring-1 focus:ring-[hsl(var(--navy))]"
+              />
+            </div>
+
+            {/* Message */}
+            <div>
+              <label className="block text-xs font-semibold text-[hsl(var(--navy))] uppercase tracking-wider mb-2">Описание</label>
+              <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                rows={4}
+                placeholder="Подробно опишите проблему или вопрос. При необходимости укажите номер дела, модуль системы и шаги воспроизведения..."
+                className="w-full px-3 py-2.5 text-sm border border-[hsl(var(--border))] rounded-sm bg-[hsl(var(--surface))] focus:outline-none focus:border-[hsl(var(--navy))] focus:ring-1 focus:ring-[hsl(var(--navy))] resize-none leading-relaxed"
+              />
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center gap-3 pt-1">
+              <button
+                onClick={onClose}
+                className="px-4 py-2.5 border border-[hsl(var(--border))] text-sm text-[hsl(var(--muted-foreground))] rounded-sm hover:bg-[hsl(var(--muted))] transition-colors"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={handleSend}
+                disabled={!category || !subject || !message || sending}
+                className="flex-1 py-2.5 bg-[hsl(var(--navy))] text-white text-sm font-semibold rounded-sm hover:bg-[hsl(var(--navy-mid))] transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
+              >
+                {sending
+                  ? <><Icon name="Loader" size={15} className="animate-spin" /> Отправляю...</>
+                  : <><Icon name="Send" size={15} /> Отправить обращение</>
+                }
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function Index() {
   const [active, setActive] = useState<Section>("home");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
   const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
   const [judges, setJudges] = useState<JudgeItem[]>(INIT_JUDGES);
 
@@ -1420,10 +1588,19 @@ export default function Index() {
 
         <footer className="bg-white border-t border-[hsl(var(--border))] px-8 py-3 flex items-center justify-between">
           <span className="text-xs text-[hsl(var(--muted-foreground))] font-mono-ru">
-            ГАС «Судопроизводство 1.0» · АИС поддержки судопроизводства
+            ГАС «Судопроизводство 1.0»
           </span>
+          <button
+            onClick={() => setSupportOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[hsl(var(--navy))] border border-[hsl(var(--navy))/30] rounded-sm hover:bg-[hsl(var(--navy))] hover:text-white transition-colors group"
+          >
+            <Icon name="Headphones" size={13} />
+            Техническая поддержка
+          </button>
           <span className="text-xs text-[hsl(var(--muted-foreground))]">{new Date().getFullYear()} · v1.0</span>
         </footer>
+
+        {supportOpen && <SupportModal onClose={() => setSupportOpen(false)} />}
       </main>
     </div>
   );
