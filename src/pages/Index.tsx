@@ -135,29 +135,41 @@ function HomePage({ onNavigate }: { onNavigate: (s: Section) => void }) {
   );
 }
 
+const SEARCH_API_URL = "https://functions.poehali.dev/2419c578-0d31-4ff5-af53-3d6d80370658";
+
 function SearchSection() {
   const [messages, setMessages] = useState([
     { role: "ai", text: "Здравствуйте. Я готов помочь с поиском судебной практики. Опишите ситуацию или введите ключевые слова, нормы права, номер дела." },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const send = () => {
-    if (!input.trim()) return;
+  const send = async () => {
+    if (!input.trim() || loading) return;
     const userMsg = input.trim();
-    setMessages((m) => [...m, { role: "user", text: userMsg }]);
+    const updatedMessages = [...messages, { role: "user", text: userMsg }];
+    setMessages(updatedMessages);
     setInput("");
     setLoading(true);
-    setTimeout(() => {
-      setMessages((m) => [
-        ...m,
-        {
-          role: "ai",
-          text: `Анализирую запрос: «${userMsg}». Функция поиска будет подключена к ChatGPT API — для активации настройте API-ключ в разделе настроек системы.`,
-        },
-      ]);
+    setError("");
+
+    try {
+      const res = await fetch(SEARCH_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: updatedMessages }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Ошибка сервера");
+      setMessages((m) => [...m, { role: "ai", text: data.answer }]);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Неизвестная ошибка";
+      setError(msg);
+      setMessages((m) => [...m, { role: "ai", text: "Произошла ошибка при обращении к ИИ. Убедитесь, что API-ключ OpenAI добавлен в настройках." }]);
+    } finally {
       setLoading(false);
-    }, 1200);
+    }
   };
 
   return (
@@ -216,19 +228,27 @@ function SearchSection() {
       </div>
 
       <div className="px-8 py-4 border-t border-[hsl(var(--border))] bg-white">
+        {error && (
+          <div className="mb-2 px-3 py-2 bg-red-50 border border-red-200 rounded-sm flex items-center gap-2 text-xs text-red-700">
+            <Icon name="AlertCircle" size={13} />
+            {error}
+          </div>
+        )}
         <div className="flex gap-2">
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && send()}
+            disabled={loading}
             placeholder="Введите запрос: нормы права, обстоятельства дела, ключевые слова..."
-            className="flex-1 px-4 py-2.5 text-sm border border-[hsl(var(--border))] rounded-sm bg-[hsl(var(--surface))] focus:outline-none focus:border-[hsl(var(--navy))] focus:ring-1 focus:ring-[hsl(var(--navy))]"
+            className="flex-1 px-4 py-2.5 text-sm border border-[hsl(var(--border))] rounded-sm bg-[hsl(var(--surface))] focus:outline-none focus:border-[hsl(var(--navy))] focus:ring-1 focus:ring-[hsl(var(--navy))] disabled:opacity-60"
           />
           <button
             onClick={send}
-            className="px-4 py-2.5 bg-[hsl(var(--navy))] text-white text-sm font-medium rounded-sm hover:bg-[hsl(var(--navy-mid))] transition-colors flex items-center gap-2"
+            disabled={loading || !input.trim()}
+            className="px-4 py-2.5 bg-[hsl(var(--navy))] text-white text-sm font-medium rounded-sm hover:bg-[hsl(var(--navy-mid))] transition-colors flex items-center gap-2 disabled:opacity-50"
           >
-            <Icon name="Send" size={15} />
+            {loading ? <Icon name="Loader" size={15} className="animate-spin" /> : <Icon name="Send" size={15} />}
             Отправить
           </button>
         </div>

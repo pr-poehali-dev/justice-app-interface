@@ -1,0 +1,23 @@
+{
+  "tests": [
+    {
+      "name": "OPTIONS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Поиск судебной практики",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "messages": [
+          {"role": "user", "text": "Какова практика судов по делам о взыскании неустойки по договору займа?"}
+        ]
+      },
+      "expectedStatus": 200,
+      "expectedBody": {"answer": "string"},
+      "bodyMatcher": "partial"
+    }
+  ]
+}
