@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import type React from "react";
 import Icon from "@/components/ui/icon";
 
 type Section = "home" | "search" | "generator" | "stenography" | "distribution";
@@ -701,9 +702,8 @@ const INIT_JUDGES: JudgeItem[] = [
   { name: "Козлова Е.Р.", load: 30, spec: ["Гражданское", "Уголовное"], complexSpec: ["Организованная преступность"], onVacation: false, onSickLeave: false, staffOnVacation: false, staffOnSickLeave: true },
 ];
 
-function DistributionSection() {
+function DistributionSection({ judges, setJudges }: { judges: JudgeItem[]; setJudges: React.Dispatch<React.SetStateAction<JudgeItem[]>> }) {
   const [cases, setCases] = useState<CaseItem[]>(INIT_CASES);
-  const [judges, setJudges] = useState<JudgeItem[]>(INIT_JUDGES);
   const [distributing, setDistributing] = useState(false);
   const [reasoning, setReasoning] = useState("");
   const [error, setError] = useState("");
@@ -966,10 +966,28 @@ const DEFAULT_PROFILE: UserProfile = {
   spec: ["Уголовное", "Гражданское"],
 };
 
-function ProfilePanel({ onClose }: { onClose: () => void }) {
-  const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
+function ProfilePanel({
+  onClose,
+  profile,
+  setProfile,
+  onSyncToJudges,
+}: {
+  onClose: () => void;
+  profile: UserProfile;
+  setProfile: React.Dispatch<React.SetStateAction<UserProfile>>;
+  onSyncToJudges: (p: UserProfile) => void;
+}) {
   const [editName, setEditName] = useState(false);
   const [nameInput, setNameInput] = useState(profile.name);
+  const [synced, setSynced] = useState(false);
+
+  const handleStatusChange = (field: keyof UserProfile) => {
+    const updated = { ...profile, [field]: !profile[field] };
+    setProfile(updated);
+    onSyncToJudges(updated);
+    setSynced(true);
+    setTimeout(() => setSynced(false), 2500);
+  };
   const [tab, setTab] = useState<"profile" | "stats" | "settings">("profile");
 
   const roleLabel = profile.role === "judge" ? "Судья" : "Работник аппарата";
@@ -980,6 +998,13 @@ function ProfilePanel({ onClose }: { onClose: () => void }) {
         className="w-full max-w-md bg-white h-full shadow-2xl flex flex-col animate-slide-in-right overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Sync toast */}
+        {synced && (
+          <div className="fixed top-4 right-4 z-[60] flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white text-xs font-medium rounded shadow-lg animate-fade-in">
+            <Icon name="RefreshCw" size={13} />
+            Статус синхронизирован с модулем распределения
+          </div>
+        )}
         {/* Header */}
         <div className="bg-[hsl(var(--navy))] px-6 py-6 relative overflow-hidden">
           <div className="absolute inset-0 opacity-5" style={{ backgroundImage: "repeating-linear-gradient(45deg, white 0, white 1px, transparent 0, transparent 50%)", backgroundSize: "20px 20px" }} />
@@ -1083,10 +1108,16 @@ function ProfilePanel({ onClose }: { onClose: () => void }) {
                   {["Гражданское", "Уголовное", "Административное", "Арбитражное", "Семейное"].map((s) => (
                     <button
                       key={s}
-                      onClick={() => setProfile((p) => ({
-                        ...p,
-                        spec: p.spec.includes(s) ? p.spec.filter((x) => x !== s) : [...p.spec, s],
-                      }))}
+                      onClick={() => {
+                        const newSpec = profile.spec.includes(s)
+                          ? profile.spec.filter((x) => x !== s)
+                          : [...profile.spec, s];
+                        const updated = { ...profile, spec: newSpec };
+                        setProfile(updated);
+                        onSyncToJudges(updated);
+                        setSynced(true);
+                        setTimeout(() => setSynced(false), 2500);
+                      }}
                       className={`text-xs px-2.5 py-1 rounded border font-medium transition-colors ${profile.spec.includes(s) ? "bg-[hsl(var(--navy))] text-white border-[hsl(var(--navy))]" : "bg-white text-[hsl(var(--muted-foreground))] border-[hsl(var(--border))] hover:border-[hsl(var(--navy))]"}`}
                     >
                       {s}
@@ -1106,7 +1137,7 @@ function ProfilePanel({ onClose }: { onClose: () => void }) {
                     return (
                       <button
                         key={field}
-                        onClick={() => setProfile((p) => ({ ...p, [field]: !p[field] }))}
+                        onClick={() => handleStatusChange(field)}
                         className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-sm border transition-colors ${active ? (color === "amber" ? "bg-amber-50 border-amber-200 text-amber-700" : "bg-red-50 border-red-200 text-red-700") : "bg-[hsl(var(--surface))] border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:border-[hsl(var(--navy))]"}`}
                       >
                         <Icon name={icon} size={15} />
@@ -1228,6 +1259,29 @@ export default function Index() {
   const [active, setActive] = useState<Section>("home");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
+  const [judges, setJudges] = useState<JudgeItem[]>(INIT_JUDGES);
+
+  const syncProfileToJudges = (p: UserProfile) => {
+    const parts = p.name.trim().split(/\s+/);
+    const shortName = parts.length >= 2
+      ? parts[0] + " " + parts.slice(1).map((w) => w[0] + ".").join("")
+      : p.name;
+
+    setJudges((prev) =>
+      prev.map((j) => {
+        if (j.name === shortName) {
+          return {
+            ...j,
+            onVacation: p.onVacation,
+            onSickLeave: p.onSickLeave,
+            spec: p.spec,
+          };
+        }
+        return j;
+      })
+    );
+  };
 
   const renderContent = () => {
     switch (active) {
@@ -1238,7 +1292,7 @@ export default function Index() {
       case "stenography":
         return <StenographySection />;
       case "distribution":
-        return <DistributionSection />;
+        return <DistributionSection judges={judges} setJudges={setJudges} />;
       default:
         return <HomePage onNavigate={setActive} />;
     }
@@ -1337,12 +1391,16 @@ export default function Index() {
               onClick={() => setProfileOpen(true)}
               className="flex items-center gap-2 px-2 py-1 rounded-sm hover:bg-[hsl(var(--muted))] transition-colors group"
             >
-              <div className="w-7 h-7 rounded-full bg-[hsl(var(--navy))] flex items-center justify-center text-white text-xs font-bold">
-                ПС
+              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold ${profile.onSickLeave || profile.onVacation ? "bg-[hsl(var(--muted-foreground))]" : "bg-[hsl(var(--navy))]"}`}>
+                {profile.name.split(" ").map((w) => w[0]).slice(0, 2).join("")}
               </div>
               <div className="text-left hidden sm:block">
-                <p className="text-xs font-medium text-[hsl(var(--foreground))] leading-tight">Петрова С.М.</p>
-                <p className="text-xs text-[hsl(var(--muted-foreground))] leading-tight">Судья</p>
+                <p className="text-xs font-medium text-[hsl(var(--foreground))] leading-tight">
+                  {profile.name.split(" ")[0]} {profile.name.split(" ").slice(1).map((w) => w[0] + ".").join("")}
+                </p>
+                <p className={`text-xs leading-tight ${profile.onSickLeave ? "text-red-500" : profile.onVacation ? "text-amber-500" : "text-[hsl(var(--muted-foreground))]"}`}>
+                  {profile.onSickLeave ? "На больничном" : profile.onVacation ? "В отпуске" : profile.role === "judge" ? "Судья" : "Работник аппарата"}
+                </p>
               </div>
               <Icon name="ChevronDown" size={13} className="text-[hsl(var(--muted-foreground))] group-hover:text-[hsl(var(--navy))] transition-colors" />
             </button>
@@ -1351,7 +1409,14 @@ export default function Index() {
 
         <div className="flex-1 overflow-y-auto py-6">{renderContent()}</div>
 
-        {profileOpen && <ProfilePanel onClose={() => setProfileOpen(false)} />}
+        {profileOpen && (
+          <ProfilePanel
+            onClose={() => setProfileOpen(false)}
+            profile={profile}
+            setProfile={setProfile}
+            onSyncToJudges={syncProfileToJudges}
+          />
+        )}
 
         <footer className="bg-white border-t border-[hsl(var(--border))] px-8 py-3 flex items-center justify-between">
           <span className="text-xs text-[hsl(var(--muted-foreground))] font-mono-ru">
