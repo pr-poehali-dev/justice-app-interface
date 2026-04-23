@@ -1,0 +1,22 @@
+{
+  "tests": [
+    {
+      "name": "OPTIONS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Получить статистику дел",
+      "method": "GET",
+      "path": "/",
+      "expectedStatus": 200,
+      "expectedBody": {
+        "received_this_year": 0,
+        "resolved_this_year": 0,
+        "in_progress_total": 0
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

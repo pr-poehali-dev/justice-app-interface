@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import type React from "react";
 import Icon from "@/components/ui/icon";
 
@@ -64,7 +64,22 @@ const iconColors: Record<string, string> = {
   purple: "bg-violet-100 text-violet-700",
 };
 
+const STATS_URL = "https://functions.poehali.dev/8473baaa-d138-4cc6-baae-c57fb93bf1e6";
+
+type Stats = { received_this_year: number; resolved_this_year: number; in_progress_total: number };
+
 function HomePage({ onNavigate }: { onNavigate: (s: Section) => void }) {
+  const [stats, setStats] = useState<Stats | null>(null);
+
+  useEffect(() => {
+    fetch(STATS_URL)
+      .then((r) => r.json())
+      .then((data) => setStats(data))
+      .catch(() => {});
+  }, []);
+
+  const fmt = (n: number | undefined) => n !== undefined ? n.toLocaleString("ru-RU") : "—";
+
   return (
     <div className="animate-fade-in">
       <div className="bg-[hsl(var(--navy))] text-white px-8 py-10 mb-8 relative overflow-hidden">
@@ -87,17 +102,23 @@ function HomePage({ onNavigate }: { onNavigate: (s: Section) => void }) {
           </p>
           <div className="flex items-center gap-6 mt-6 flex-wrap">
             <div className="text-center">
-              <div className="text-2xl font-bold text-[hsl(var(--gold))]">415</div>
+              <div className="text-2xl font-bold text-[hsl(var(--gold))]">
+                {stats ? fmt(stats.received_this_year) : <span className="opacity-40 animate-pulse">—</span>}
+              </div>
               <div className="text-xs text-white/50 mt-0.5 leading-tight">Поступило дел<br/>с начала года</div>
             </div>
             <div className="w-px h-12 bg-white/10" />
             <div className="text-center">
-              <div className="text-2xl font-bold text-emerald-400">192</div>
+              <div className="text-2xl font-bold text-emerald-400">
+                {stats ? fmt(stats.resolved_this_year) : <span className="opacity-40 animate-pulse">—</span>}
+              </div>
               <div className="text-xs text-white/50 mt-0.5 leading-tight">Рассмотрено<br/>с начала года</div>
             </div>
             <div className="w-px h-12 bg-white/10" />
             <div className="text-center">
-              <div className="text-2xl font-bold text-amber-400">468</div>
+              <div className="text-2xl font-bold text-amber-400">
+                {stats ? fmt(stats.in_progress_total) : <span className="opacity-40 animate-pulse">—</span>}
+              </div>
               <div className="text-xs text-white/50 mt-0.5 leading-tight">В производстве<br/>всего</div>
             </div>
           </div>
