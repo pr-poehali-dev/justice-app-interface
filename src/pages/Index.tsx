@@ -2,13 +2,14 @@ import { useState, useRef, useEffect } from "react";
 import type React from "react";
 import Icon from "@/components/ui/icon";
 
-type Section = "home" | "search" | "generator" | "stenography" | "distribution";
+type Section = "home" | "search" | "generator" | "stenography" | "distribution" | "requests";
 
 const NAV_ITEMS = [
   { id: "search" as Section, icon: "Search", label: "Поиск практики", sub: "ИИ-ассистент" },
   { id: "generator" as Section, icon: "FileText", label: "Генератор актов", sub: "Проекты судебных актов" },
   { id: "stenography" as Section, icon: "Mic", label: "Стенография", sub: "Протокол заседания" },
   { id: "distribution" as Section, icon: "GitBranch", label: "Распределение дел", sub: "ИИ-модуль" },
+  { id: "requests" as Section, icon: "SendHorizonal", label: "Направление запросов", sub: "СКЗИ · ИнфоТеКС" },
 ];
 
 const MODULE_CARDS = [
@@ -48,6 +49,15 @@ const MODULE_CARDS = [
     tag: "ML-модель",
     color: "purple",
   },
+  {
+    id: "requests" as Section,
+    icon: "SendHorizonal",
+    num: "05",
+    title: "Направление запросов",
+    desc: "Защищённая отправка судебных запросов, актов и исполнительных листов в ФССП и другие органы по зашифрованному каналу СКЗИ",
+    tag: "ИнфоТеКС ViPNet",
+    color: "teal",
+  },
 ];
 
 const tagColors: Record<string, string> = {
@@ -55,6 +65,7 @@ const tagColors: Record<string, string> = {
   green: "bg-emerald-50 text-emerald-700 border-emerald-200",
   amber: "bg-amber-50 text-amber-700 border-amber-200",
   purple: "bg-violet-50 text-violet-700 border-violet-200",
+  teal: "bg-teal-50 text-teal-700 border-teal-200",
 };
 
 const iconColors: Record<string, string> = {
@@ -62,6 +73,7 @@ const iconColors: Record<string, string> = {
   green: "bg-emerald-100 text-emerald-700",
   amber: "bg-amber-100 text-amber-700",
   purple: "bg-violet-100 text-violet-700",
+  teal: "bg-teal-100 text-teal-700",
 };
 
 const STATS_URL = "https://functions.poehali.dev/8473baaa-d138-4cc6-baae-c57fb93bf1e6";
@@ -1534,6 +1546,281 @@ function AuthScreen({ onAuth }: { onAuth: () => void }) {
   );
 }
 
+const RECIPIENTS = [
+  { id: "fssp", label: "ФССП России", fullName: "Федеральная служба судебных приставов", icon: "Landmark", docs: ["Исполнительный лист", "Судебный приказ", "Определение суда"] },
+  { id: "fns", label: "ФНС России", fullName: "Федеральная налоговая служба", icon: "Building2", docs: ["Судебный запрос", "Решение суда", "Определение суда"] },
+  { id: "mvd", label: "МВД России", fullName: "Министерство внутренних дел", icon: "Shield", docs: ["Судебный запрос", "Постановление суда", "Запрос о предоставлении сведений"] },
+  { id: "prokuratura", label: "Прокуратура", fullName: "Прокуратура Российской Федерации", icon: "Scale", docs: ["Судебный запрос", "Копия судебного акта", "Уведомление"] },
+  { id: "rosreestr", label: "Росреестр", fullName: "Федеральная служба государственной регистрации", icon: "MapPin", docs: ["Судебный запрос", "Решение суда", "Определение об обеспечительных мерах"] },
+  { id: "other", label: "Иной орган", fullName: "Другой государственный орган", icon: "SendHorizonal", docs: ["Судебный запрос", "Судебный акт", "Исполнительный лист", "Иной документ"] },
+];
+
+const DOC_TYPES = ["Судебный запрос", "Судебный акт", "Исполнительный лист", "Судебный приказ", "Определение суда", "Постановление суда", "Иной документ"];
+
+type SendStatus = "idle" | "encrypting" | "connecting" | "sending" | "done" | "error";
+
+function RequestsSection() {
+  const [recipient, setRecipient] = useState<string>("");
+  const [docType, setDocType] = useState<string>("");
+  const [caseNumber, setCaseNumber] = useState("");
+  const [comment, setComment] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
+  const [sendStatus, setSendStatus] = useState<SendStatus>("idle");
+  const [history, setHistory] = useState<{ id: string; recipient: string; docType: string; caseNumber: string; time: string; status: string }[]>([
+    { id: "ЗПР-00142", recipient: "ФССП России", docType: "Исполнительный лист", caseNumber: "22-10018/2025", time: "12.04.2025 09:14", status: "Доставлен" },
+    { id: "ЗПР-00139", recipient: "ФНС России", docType: "Судебный запрос", caseNumber: "22-10011/2025", time: "10.04.2025 14:32", status: "Доставлен" },
+    { id: "ЗПР-00137", recipient: "МВД России", docType: "Постановление суда", caseNumber: "22-10012/2025", time: "08.04.2025 11:05", status: "Ошибка" },
+  ]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const selectedRecipient = RECIPIENTS.find((r) => r.id === recipient);
+  const reqId = `ЗПР-${(Math.floor(Math.random() * 900) + 143).toString().padStart(5, "0")}`;
+
+  const handleSend = () => {
+    if (!recipient || !docType || !caseNumber) return;
+    setSendStatus("encrypting");
+    setTimeout(() => setSendStatus("connecting"), 1500);
+    setTimeout(() => setSendStatus("sending"), 3000);
+    setTimeout(() => {
+      setSendStatus("done");
+      setHistory((prev) => [{
+        id: reqId,
+        recipient: selectedRecipient?.label ?? recipient,
+        docType,
+        caseNumber,
+        time: new Date().toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }),
+        status: "Доставлен",
+      }, ...prev]);
+    }, 5000);
+  };
+
+  const reset = () => { setSendStatus("idle"); setRecipient(""); setDocType(""); setCaseNumber(""); setComment(""); setFiles([]); };
+
+  const statusSteps = [
+    { key: "encrypting", label: "Шифрование ГОСТ 28147-89", icon: "Lock" },
+    { key: "connecting", label: "Установка ViPNet-соединения", icon: "Wifi" },
+    { key: "sending", label: "Передача по защищённому каналу", icon: "SendHorizonal" },
+    { key: "done", label: "Документ доставлен", icon: "CheckCircle" },
+  ];
+
+  const currentStepIdx = statusSteps.findIndex((s) => s.key === sendStatus);
+
+  return (
+    <div className="animate-fade-in">
+      {/* Header */}
+      <div className="px-8 py-6 border-b border-[hsl(var(--border))] bg-white">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded bg-teal-100 flex items-center justify-center">
+            <Icon name="SendHorizonal" size={16} className="text-teal-700" />
+          </div>
+          <div>
+            <h2 className="font-bold text-[hsl(var(--navy))] text-base">Модуль направления запросов</h2>
+            <p className="text-xs text-[hsl(var(--muted-foreground))]">Защищённая передача документов · СКЗИ · ИнфоТеКС ViPNet</p>
+          </div>
+          {/* Security badge */}
+          <div className="ml-auto flex items-center gap-1.5 px-3 py-1.5 bg-teal-50 border border-teal-200 rounded-sm">
+            <Icon name="ShieldCheck" size={13} className="text-teal-600" />
+            <span className="text-xs font-medium text-teal-700">ГОСТ TLS · ViPNet активен</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="px-8 py-6 grid grid-cols-1 xl:grid-cols-3 gap-6">
+
+        {/* Left: form */}
+        <div className="xl:col-span-2 space-y-5">
+
+          {sendStatus !== "idle" && sendStatus !== "done" && sendStatus !== "error" ? (
+            /* Sending progress */
+            <div className="bg-white border border-[hsl(var(--border))] rounded-sm p-8 animate-fade-in">
+              <div className="text-center mb-8">
+                <div className="w-14 h-14 rounded-full bg-teal-100 flex items-center justify-center mx-auto mb-3">
+                  <Icon name="Lock" size={24} className="text-teal-600 animate-pulse" />
+                </div>
+                <p className="font-bold text-[hsl(var(--navy))] text-base">Передача документа</p>
+                <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">Получатель: {selectedRecipient?.fullName}</p>
+              </div>
+
+              <div className="space-y-4">
+                {statusSteps.map((step, i) => {
+                  const done = i < currentStepIdx;
+                  const active = i === currentStepIdx;
+                  return (
+                    <div key={step.key} className={`flex items-center gap-3 px-4 py-3 rounded-sm border transition-all ${done ? "bg-emerald-50 border-emerald-200" : active ? "bg-teal-50 border-teal-300" : "bg-[hsl(var(--surface))] border-[hsl(var(--border))] opacity-40"}`}>
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${done ? "bg-emerald-500" : active ? "bg-teal-600" : "bg-[hsl(var(--muted))]"}`}>
+                        {done
+                          ? <Icon name="Check" size={13} className="text-white" />
+                          : active
+                          ? <Icon name={step.icon} size={13} className="text-white animate-pulse" />
+                          : <Icon name={step.icon} size={13} className="text-[hsl(var(--muted-foreground))]" />
+                        }
+                      </div>
+                      <span className={`text-sm font-medium ${done ? "text-emerald-700" : active ? "text-teal-700" : "text-[hsl(var(--muted-foreground))]"}`}>
+                        {step.label}
+                      </span>
+                      {active && <Icon name="Loader" size={14} className="ml-auto text-teal-600 animate-spin" />}
+                      {done && <Icon name="CheckCircle" size={14} className="ml-auto text-emerald-500" />}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="mt-6 px-4 py-3 bg-[hsl(var(--surface))] border border-[hsl(var(--border))] rounded-sm">
+                <div className="flex justify-between text-xs text-[hsl(var(--muted-foreground))] mb-1">
+                  <span className="font-mono-ru">Шифрование: ГОСТ 28147-89 · Туннель: ViPNet</span>
+                </div>
+                <div className="h-1.5 bg-[hsl(var(--muted))] rounded-full overflow-hidden">
+                  <div className="h-full bg-teal-500 rounded-full transition-all duration-1000"
+                    style={{ width: `${Math.min(100, (currentStepIdx / (statusSteps.length - 1)) * 100)}%` }} />
+                </div>
+              </div>
+            </div>
+
+          ) : sendStatus === "done" ? (
+            /* Success */
+            <div className="bg-white border border-[hsl(var(--border))] rounded-sm p-8 text-center animate-fade-in">
+              <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
+                <Icon name="CheckCircle" size={28} className="text-emerald-600" />
+              </div>
+              <h3 className="font-bold text-[hsl(var(--navy))] text-base mb-1">Документ успешно доставлен</h3>
+              <p className="text-sm text-[hsl(var(--muted-foreground))] mb-1">{selectedRecipient?.fullName}</p>
+              <div className="flex items-center justify-center gap-2 mt-3 mb-1">
+                <span className="text-xs text-[hsl(var(--muted-foreground))]">Идентификатор:</span>
+                <span className="text-xs font-mono-ru font-bold text-[hsl(var(--navy))]">{reqId}</span>
+              </div>
+              <div className="flex flex-wrap justify-center gap-2 mt-3 mb-5 text-xs">
+                <span className="px-2 py-0.5 bg-teal-50 border border-teal-200 text-teal-700 rounded">ГОСТ 28147-89</span>
+                <span className="px-2 py-0.5 bg-teal-50 border border-teal-200 text-teal-700 rounded">ViPNet Coordinator</span>
+                <span className="px-2 py-0.5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded">Подпись УКЭП</span>
+              </div>
+              <button onClick={reset} className="px-6 py-2.5 bg-[hsl(var(--navy))] text-white text-sm font-medium rounded-sm hover:bg-[hsl(var(--navy-mid))] transition-colors">
+                Отправить ещё
+              </button>
+            </div>
+
+          ) : (
+            /* Form */
+            <>
+              {/* Crypto info */}
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { icon: "Lock", label: "Шифрование", value: "ГОСТ 28147-89" },
+                  { icon: "Wifi", label: "Канал", value: "ViPNet Coordinator" },
+                  { icon: "ShieldCheck", label: "Подпись", value: "УКЭП / КриптоПро" },
+                ].map((item) => (
+                  <div key={item.label} className="flex items-center gap-2 px-3 py-2.5 bg-teal-50 border border-teal-100 rounded-sm">
+                    <Icon name={item.icon} size={14} className="text-teal-600 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-xs text-teal-500">{item.label}</p>
+                      <p className="text-xs font-semibold text-teal-800 truncate">{item.value}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Recipient */}
+              <div>
+                <label className="block text-xs font-semibold text-[hsl(var(--navy))] uppercase tracking-wider mb-2">Орган-получатель</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {RECIPIENTS.map((r) => (
+                    <button
+                      key={r.id}
+                      onClick={() => { setRecipient(r.id); setDocType(""); }}
+                      className={`flex items-center gap-3 px-3 py-2.5 border rounded-sm text-left transition-all ${recipient === r.id ? "border-teal-500 bg-teal-50" : "border-[hsl(var(--border))] bg-white hover:border-teal-300"}`}
+                    >
+                      <div className={`w-7 h-7 rounded flex items-center justify-center flex-shrink-0 ${recipient === r.id ? "bg-teal-600" : "bg-[hsl(var(--muted))]"}`}>
+                        <Icon name={r.icon} size={14} className={recipient === r.id ? "text-white" : "text-[hsl(var(--muted-foreground))]"} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className={`text-xs font-semibold truncate ${recipient === r.id ? "text-teal-800" : "text-[hsl(var(--foreground))]"}`}>{r.label}</p>
+                        <p className="text-xs text-[hsl(var(--muted-foreground))] truncate leading-tight">{r.fullName.split(" ").slice(0, 3).join(" ")}</p>
+                      </div>
+                      {recipient === r.id && <Icon name="CheckCircle" size={14} className="text-teal-500 ml-auto flex-shrink-0" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Doc type */}
+              <div>
+                <label className="block text-xs font-semibold text-[hsl(var(--navy))] uppercase tracking-wider mb-2">Вид направляемого документа</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {(selectedRecipient?.docs ?? DOC_TYPES).map((d) => (
+                    <button key={d} onClick={() => setDocType(d)}
+                      className={`text-xs px-2.5 py-1.5 rounded-sm border font-medium transition-colors ${docType === d ? "bg-[hsl(var(--navy))] text-white border-[hsl(var(--navy))]" : "bg-white text-[hsl(var(--muted-foreground))] border-[hsl(var(--border))] hover:border-[hsl(var(--navy))]"}`}>
+                      {d}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Case number */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-[hsl(var(--navy))] uppercase tracking-wider mb-2">Номер дела</label>
+                  <input value={caseNumber} onChange={(e) => setCaseNumber(e.target.value)}
+                    placeholder="22-XXXXX/2025"
+                    className="w-full px-3 py-2.5 text-sm border border-[hsl(var(--border))] rounded-sm bg-[hsl(var(--surface))] focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 font-mono-ru" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[hsl(var(--navy))] uppercase tracking-wider mb-2">Вложения</label>
+                  <input ref={fileInputRef} type="file" multiple className="hidden"
+                    onChange={(e) => setFiles((prev) => [...prev, ...Array.from(e.target.files || [])].slice(0, 5))} />
+                  <button onClick={() => fileInputRef.current?.click()}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 border border-dashed border-[hsl(var(--border))] rounded-sm text-xs text-[hsl(var(--muted-foreground))] hover:border-teal-400 hover:text-teal-600 transition-colors">
+                    <Icon name="Paperclip" size={13} />
+                    {files.length > 0 ? `${files.length} файл${files.length > 1 ? "а" : ""}` : "Прикрепить файл"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Comment */}
+              <div>
+                <label className="block text-xs font-semibold text-[hsl(var(--navy))] uppercase tracking-wider mb-2">Сопроводительная записка</label>
+                <textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={3}
+                  placeholder="Дополнительная информация для получателя..."
+                  className="w-full px-3 py-2.5 text-sm border border-[hsl(var(--border))] rounded-sm bg-[hsl(var(--surface))] focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 resize-none" />
+              </div>
+
+              <button onClick={handleSend} disabled={!recipient || !docType || !caseNumber}
+                className="w-full py-3 bg-teal-700 text-white font-semibold text-sm rounded-sm hover:bg-teal-800 transition-colors disabled:opacity-40 flex items-center justify-center gap-2">
+                <Icon name="Lock" size={15} />
+                Зашифровать и отправить
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* Right: history */}
+        <div>
+          <h3 className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-widest mb-3">История отправлений</h3>
+          <div className="space-y-2">
+            {history.map((h) => (
+              <div key={h.id} className="bg-white border border-[hsl(var(--border))] rounded-sm p-3 animate-fade-in">
+                <div className="flex items-start justify-between gap-2 mb-1">
+                  <span className="text-xs font-mono-ru font-bold text-[hsl(var(--navy))]">{h.id}</span>
+                  <span className={`text-xs px-1.5 py-0.5 rounded border font-medium flex-shrink-0 ${h.status === "Доставлен" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-red-50 text-red-700 border-red-200"}`}>
+                    {h.status}
+                  </span>
+                </div>
+                <p className="text-xs font-medium text-[hsl(var(--foreground))] truncate">{h.recipient}</p>
+                <p className="text-xs text-[hsl(var(--muted-foreground))] truncate">{h.docType} · {h.caseNumber}</p>
+                <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1 font-mono-ru">{h.time}</p>
+              </div>
+            ))}
+            {history.length === 0 && (
+              <div className="text-center py-8 text-[hsl(var(--muted-foreground))]">
+                <Icon name="SendHorizonal" size={28} className="mx-auto mb-2 opacity-30" />
+                <p className="text-xs">История пуста</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const SUPPORT_CATEGORIES = [
   "Технический сбой",
   "Ошибка в данных дела",
@@ -1826,6 +2113,8 @@ export default function Index() {
         return <StenographySection />;
       case "distribution":
         return <DistributionSection judges={judges} setJudges={setJudges} />;
+      case "requests":
+        return <RequestsSection />;
       default:
         return <HomePage onNavigate={setActive} />;
     }
