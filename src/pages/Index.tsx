@@ -1443,8 +1443,14 @@ function AuthScreen({ onAuth }: { onAuth: () => void }) {
     setStep("pin");
   };
 
+  const CORRECT_PIN = "12022009";
+
   const handleVerify = () => {
     if (pin.length < 4) { setPinError(true); return; }
+    if (mediaType === "token" && pin !== CORRECT_PIN) {
+      setPinError(true);
+      return;
+    }
     setPinError(false);
     setLoading(true);
     setTimeout(() => {
@@ -1606,7 +1612,7 @@ function AuthScreen({ onAuth }: { onAuth: () => void }) {
                   />
                   {pinError && (
                     <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
-                      <Icon name="AlertCircle" size={12} /> Введите корректный PIN-код (минимум 4 символа)
+                      <Icon name="AlertCircle" size={12} /> {mediaType === "token" && pin.length >= 4 ? "Неверный PIN-код. Попробуйте ещё раз." : "Введите корректный PIN-код (минимум 4 символа)"}
                     </p>
                   )}
                   <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1.5">
