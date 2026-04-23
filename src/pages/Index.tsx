@@ -544,11 +544,11 @@ function StenographySection() {
 }
 
 const CASES = [
-  { id: "А40-12345/2024", type: "Гражданское", subject: "Взыскание долга", complexity: "Средняя", status: "new", judge: null as string | null },
-  { id: "А40-12346/2024", type: "Административное", subject: "Оспаривание решения", complexity: "Высокая", status: "new", judge: null as string | null },
-  { id: "А40-12347/2024", type: "Гражданское", subject: "Раздел имущества", complexity: "Высокая", status: "assigned", judge: "Иванов А.В." },
-  { id: "А40-12348/2024", type: "Уголовное", subject: "Мошенничество (ст. 159)", complexity: "Высокая", status: "assigned", judge: "Петрова С.М." },
-  { id: "А40-12349/2024", type: "Гражданское", subject: "Трудовой спор", complexity: "Низкая", status: "new", judge: null as string | null },
+  { id: "22-12345/2024", type: "Гражданское", subject: "Взыскание долга", complexity: "Средняя", status: "new", judge: null as string | null },
+  { id: "22-12346/2024", type: "Административное", subject: "Оспаривание решения", complexity: "Высокая", status: "new", judge: null as string | null },
+  { id: "22-12347/2024", type: "Гражданское", subject: "Раздел имущества", complexity: "Высокая", status: "assigned", judge: "Иванов А.В." },
+  { id: "22-12348/2024", type: "Уголовное", subject: "Мошенничество (ст. 159)", complexity: "Высокая", status: "assigned", judge: "Петрова С.М." },
+  { id: "22-12349/2024", type: "Гражданское", subject: "Трудовой спор", complexity: "Низкая", status: "new", judge: null as string | null },
 ];
 
 const JUDGES = [
