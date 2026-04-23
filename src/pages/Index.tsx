@@ -85,20 +85,20 @@ function HomePage({ onNavigate }: { onNavigate: (s: Section) => void }) {
           <p className="text-white/60 text-sm max-w-xl leading-relaxed">
             Автоматизированная информационная система поддержки судопроизводства с применением технологий искусственного интеллекта
           </p>
-          <div className="flex items-center gap-6 mt-6">
+          <div className="flex items-center gap-6 mt-6 flex-wrap">
             <div className="text-center">
-              <div className="text-2xl font-bold text-[hsl(var(--gold))]">4</div>
-              <div className="text-xs text-white/50 mt-0.5">модуля</div>
+              <div className="text-2xl font-bold text-[hsl(var(--gold))]">1 842</div>
+              <div className="text-xs text-white/50 mt-0.5 leading-tight">Поступило дел<br/>с начала года</div>
             </div>
-            <div className="w-px h-10 bg-white/10" />
+            <div className="w-px h-12 bg-white/10" />
             <div className="text-center">
-              <div className="text-2xl font-bold text-white">ИИ</div>
-              <div className="text-xs text-white/50 mt-0.5">технологии</div>
+              <div className="text-2xl font-bold text-emerald-400">1 374</div>
+              <div className="text-xs text-white/50 mt-0.5 leading-tight">Рассмотрено<br/>с начала года</div>
             </div>
-            <div className="w-px h-10 bg-white/10" />
+            <div className="w-px h-12 bg-white/10" />
             <div className="text-center">
-              <div className="text-2xl font-bold text-white">24/7</div>
-              <div className="text-xs text-white/50 mt-0.5">доступность</div>
+              <div className="text-2xl font-bold text-amber-400">468</div>
+              <div className="text-xs text-white/50 mt-0.5 leading-tight">В производстве<br/>всего</div>
             </div>
           </div>
         </div>
