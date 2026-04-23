@@ -940,9 +940,294 @@ function DistributionSection() {
   );
 }
 
+type UserRole = "judge" | "staff";
+
+type UserProfile = {
+  name: string;
+  role: UserRole;
+  position: string;
+  department: string;
+  caseLoad: number;
+  casesThisMonth: number;
+  onVacation: boolean;
+  onSickLeave: boolean;
+  spec: string[];
+};
+
+const DEFAULT_PROFILE: UserProfile = {
+  name: "Петрова Светлана Михайловна",
+  role: "judge",
+  position: "Судья",
+  department: "Судебный состав №2",
+  caseLoad: 45,
+  casesThisMonth: 12,
+  onVacation: false,
+  onSickLeave: false,
+  spec: ["Уголовное", "Гражданское"],
+};
+
+function ProfilePanel({ onClose }: { onClose: () => void }) {
+  const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
+  const [editName, setEditName] = useState(false);
+  const [nameInput, setNameInput] = useState(profile.name);
+  const [tab, setTab] = useState<"profile" | "stats" | "settings">("profile");
+
+  const roleLabel = profile.role === "judge" ? "Судья" : "Работник аппарата";
+
+  return (
+    <div className="fixed inset-0 z-50 flex justify-end" onClick={onClose}>
+      <div
+        className="w-full max-w-md bg-white h-full shadow-2xl flex flex-col animate-slide-in-right overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="bg-[hsl(var(--navy))] px-6 py-6 relative overflow-hidden">
+          <div className="absolute inset-0 opacity-5" style={{ backgroundImage: "repeating-linear-gradient(45deg, white 0, white 1px, transparent 0, transparent 50%)", backgroundSize: "20px 20px" }} />
+          <button onClick={onClose} className="absolute top-4 right-4 text-white/50 hover:text-white transition-colors">
+            <Icon name="X" size={18} />
+          </button>
+          <div className="relative flex items-center gap-4">
+            <div className="w-14 h-14 rounded-full bg-[hsl(var(--gold))] flex items-center justify-center text-white text-xl font-bold flex-shrink-0">
+              {profile.name.split(" ").map((w) => w[0]).slice(0, 2).join("")}
+            </div>
+            <div>
+              {editName ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    value={nameInput}
+                    onChange={(e) => setNameInput(e.target.value)}
+                    className="bg-white/10 text-white text-sm px-2 py-1 rounded border border-white/30 focus:outline-none w-48"
+                    autoFocus
+                  />
+                  <button onClick={() => { setProfile((p) => ({ ...p, name: nameInput })); setEditName(false); }} className="text-[hsl(var(--gold))] hover:text-white transition-colors">
+                    <Icon name="Check" size={16} />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <p className="text-white font-bold text-sm leading-tight">{profile.name}</p>
+                  <button onClick={() => setEditName(true)} className="text-white/40 hover:text-white/80 transition-colors">
+                    <Icon name="Pencil" size={12} />
+                  </button>
+                </div>
+              )}
+              <p className="text-white/60 text-xs mt-0.5">{roleLabel} · {profile.department}</p>
+              <div className="flex items-center gap-1.5 mt-2">
+                <span className={`text-xs px-2 py-0.5 rounded border font-medium ${profile.onSickLeave ? "bg-red-500/20 text-red-300 border-red-400/30" : profile.onVacation ? "bg-amber-500/20 text-amber-300 border-amber-400/30" : "bg-emerald-500/20 text-emerald-300 border-emerald-400/30"}`}>
+                  {profile.onSickLeave ? "На больничном" : profile.onVacation ? "В отпуске" : "На работе"}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex border-b border-[hsl(var(--border))] bg-[hsl(var(--surface))]">
+          {([
+            { id: "profile", label: "Профиль", icon: "User" },
+            { id: "stats", label: "Статистика", icon: "BarChart2" },
+            { id: "settings", label: "Настройки", icon: "Settings" },
+          ] as const).map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-medium transition-colors border-b-2 ${tab === t.id ? "border-[hsl(var(--navy))] text-[hsl(var(--navy))]" : "border-transparent text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--navy))]"}`}
+            >
+              <Icon name={t.icon} size={13} /> {t.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex-1 px-6 py-5 space-y-5">
+          {/* PROFILE TAB */}
+          {tab === "profile" && (
+            <div className="space-y-4 animate-fade-in">
+              <div>
+                <p className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider mb-3">Должность и роль</p>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3 px-3 py-2.5 bg-[hsl(var(--surface))] border border-[hsl(var(--border))] rounded-sm">
+                    <Icon name="Briefcase" size={14} className="text-[hsl(var(--muted-foreground))]" />
+                    <div>
+                      <p className="text-xs text-[hsl(var(--muted-foreground))]">Должность</p>
+                      <p className="text-sm font-medium text-[hsl(var(--navy))]">{profile.position}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 px-3 py-2.5 bg-[hsl(var(--surface))] border border-[hsl(var(--border))] rounded-sm">
+                    <Icon name="Building2" size={14} className="text-[hsl(var(--muted-foreground))]" />
+                    <div>
+                      <p className="text-xs text-[hsl(var(--muted-foreground))]">Подразделение</p>
+                      <p className="text-sm font-medium text-[hsl(var(--navy))]">{profile.department}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider mb-3">Роль в системе</p>
+                <div className="flex gap-2">
+                  {(["judge", "staff"] as UserRole[]).map((r) => (
+                    <button
+                      key={r}
+                      onClick={() => setProfile((p) => ({ ...p, role: r, position: r === "judge" ? "Судья" : "Помощник судьи" }))}
+                      className={`flex-1 py-2 text-xs font-medium rounded-sm border transition-colors ${profile.role === r ? "bg-[hsl(var(--navy))] text-white border-[hsl(var(--navy))]" : "bg-white text-[hsl(var(--foreground))] border-[hsl(var(--border))] hover:border-[hsl(var(--navy))]"}`}
+                    >
+                      {r === "judge" ? "⚖️ Судья" : "📋 Работник аппарата"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider mb-3">Специализация</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {["Гражданское", "Уголовное", "Административное", "Арбитражное", "Семейное"].map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => setProfile((p) => ({
+                        ...p,
+                        spec: p.spec.includes(s) ? p.spec.filter((x) => x !== s) : [...p.spec, s],
+                      }))}
+                      className={`text-xs px-2.5 py-1 rounded border font-medium transition-colors ${profile.spec.includes(s) ? "bg-[hsl(var(--navy))] text-white border-[hsl(var(--navy))]" : "bg-white text-[hsl(var(--muted-foreground))] border-[hsl(var(--border))] hover:border-[hsl(var(--navy))]"}`}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider mb-3">Текущий статус</p>
+                <div className="space-y-2">
+                  {[
+                    { field: "onVacation" as keyof UserProfile, label: "В отпуске", icon: "Palmtree", color: "amber" },
+                    { field: "onSickLeave" as keyof UserProfile, label: "На больничном", icon: "Thermometer", color: "red" },
+                  ].map(({ field, label, icon, color }) => {
+                    const active = !!profile[field];
+                    return (
+                      <button
+                        key={field}
+                        onClick={() => setProfile((p) => ({ ...p, [field]: !p[field] }))}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-sm border transition-colors ${active ? (color === "amber" ? "bg-amber-50 border-amber-200 text-amber-700" : "bg-red-50 border-red-200 text-red-700") : "bg-[hsl(var(--surface))] border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] hover:border-[hsl(var(--navy))]"}`}
+                      >
+                        <Icon name={icon} size={15} />
+                        <span className="flex-1 text-left text-sm">{label}</span>
+                        <Icon name={active ? "ToggleRight" : "ToggleLeft"} size={20} className={active ? "" : "opacity-50"} />
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* STATS TAB */}
+          {tab === "stats" && (
+            <div className="space-y-4 animate-fade-in">
+              <p className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">Показатели работы</p>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { label: "Нагрузка", value: `${profile.caseLoad}%`, icon: "Activity", color: profile.caseLoad > 70 ? "text-red-600" : profile.caseLoad > 50 ? "text-amber-600" : "text-emerald-600" },
+                  { label: "Дел в месяц", value: profile.casesThisMonth, icon: "FolderOpen", color: "text-[hsl(var(--navy))]" },
+                  { label: "Завершено", value: 9, icon: "CheckCircle", color: "text-emerald-600" },
+                  { label: "В работе", value: 3, icon: "Clock", color: "text-amber-600" },
+                ].map((s) => (
+                  <div key={s.label} className="bg-[hsl(var(--surface))] border border-[hsl(var(--border))] rounded-sm p-4 text-center">
+                    <Icon name={s.icon} size={20} className={`mx-auto mb-2 ${s.color}`} />
+                    <p className={`text-xl font-bold ${s.color}`}>{s.value}</p>
+                    <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">{s.label}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider mb-3">Нагрузка</p>
+                <div className="bg-[hsl(var(--surface))] border border-[hsl(var(--border))] rounded-sm p-4">
+                  <div className="flex justify-between text-xs mb-2">
+                    <span className="text-[hsl(var(--muted-foreground))]">Текущая загруженность</span>
+                    <span className={`font-bold font-mono-ru ${profile.caseLoad > 70 ? "text-red-600" : "text-emerald-600"}`}>{profile.caseLoad}%</span>
+                  </div>
+                  <div className="h-2 bg-[hsl(var(--muted))] rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full transition-all duration-700 ${profile.caseLoad > 70 ? "bg-red-500" : profile.caseLoad > 50 ? "bg-amber-500" : "bg-emerald-500"}`} style={{ width: `${profile.caseLoad}%` }} />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider mb-3">Последние дела</p>
+                <div className="space-y-2">
+                  {[
+                    { id: "22-12348/2024", subject: "Мошенничество (ст. 159)", status: "В работе", statusColor: "text-amber-600 bg-amber-50 border-amber-200" },
+                    { id: "22-12347/2024", subject: "Раздел имущества", status: "Завершено", statusColor: "text-emerald-600 bg-emerald-50 border-emerald-200" },
+                    { id: "22-12341/2024", subject: "Трудовой спор", status: "Завершено", statusColor: "text-emerald-600 bg-emerald-50 border-emerald-200" },
+                  ].map((c) => (
+                    <div key={c.id} className="flex items-center gap-3 px-3 py-2 bg-white border border-[hsl(var(--border))] rounded-sm">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-mono-ru text-[hsl(var(--navy))] font-medium">{c.id}</p>
+                        <p className="text-xs text-[hsl(var(--muted-foreground))] truncate">{c.subject}</p>
+                      </div>
+                      <span className={`text-xs px-1.5 py-0.5 rounded border font-medium flex-shrink-0 ${c.statusColor}`}>{c.status}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* SETTINGS TAB */}
+          {tab === "settings" && (
+            <div className="space-y-4 animate-fade-in">
+              <p className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider">Уведомления</p>
+              {[
+                { label: "Новое дело назначено", desc: "При автоматическом распределении" },
+                { label: "Изменение статуса дела", desc: "При обновлении дел в системе" },
+                { label: "Напоминания о заседаниях", desc: "За 24 часа до начала" },
+              ].map((n, i) => (
+                <div key={i} className="flex items-start gap-3 px-3 py-3 bg-[hsl(var(--surface))] border border-[hsl(var(--border))] rounded-sm">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-[hsl(var(--navy))]">{n.label}</p>
+                    <p className="text-xs text-[hsl(var(--muted-foreground))]">{n.desc}</p>
+                  </div>
+                  <div className="w-8 h-4 bg-[hsl(var(--navy))] rounded-full flex items-center justify-end px-0.5 flex-shrink-0 mt-0.5">
+                    <div className="w-3 h-3 bg-white rounded-full" />
+                  </div>
+                </div>
+              ))}
+
+              <div className="pt-2">
+                <p className="text-xs font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider mb-3">Система</p>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3 px-3 py-2.5 bg-[hsl(var(--surface))] border border-[hsl(var(--border))] rounded-sm">
+                    <Icon name="Shield" size={14} className="text-[hsl(var(--muted-foreground))]" />
+                    <div className="flex-1">
+                      <p className="text-xs font-medium text-[hsl(var(--navy))]">Версия системы</p>
+                      <p className="text-xs text-[hsl(var(--muted-foreground))]">ГАС Судопроизводство 1.0</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 px-3 py-2.5 bg-[hsl(var(--surface))] border border-[hsl(var(--border))] rounded-sm">
+                    <Icon name="Clock" size={14} className="text-[hsl(var(--muted-foreground))]" />
+                    <div className="flex-1">
+                      <p className="text-xs font-medium text-[hsl(var(--navy))]">Последний вход</p>
+                      <p className="text-xs text-[hsl(var(--muted-foreground))]">Сегодня, {new Date().toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <button className="w-full py-2.5 border border-red-200 text-red-600 text-sm font-medium rounded-sm hover:bg-red-50 transition-colors flex items-center justify-center gap-2 mt-4">
+                <Icon name="LogOut" size={15} /> Выйти из системы
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Index() {
   const [active, setActive] = useState<Section>("home");
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const renderContent = () => {
     switch (active) {
@@ -1048,16 +1333,25 @@ export default function Index() {
               <span className="text-xs text-[hsl(var(--muted-foreground))]">Система работает</span>
             </div>
             <div className="h-5 w-px bg-[hsl(var(--border))]" />
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-full bg-[hsl(var(--navy))] flex items-center justify-center">
-                <Icon name="User" size={12} className="text-white" />
+            <button
+              onClick={() => setProfileOpen(true)}
+              className="flex items-center gap-2 px-2 py-1 rounded-sm hover:bg-[hsl(var(--muted))] transition-colors group"
+            >
+              <div className="w-7 h-7 rounded-full bg-[hsl(var(--navy))] flex items-center justify-center text-white text-xs font-bold">
+                ПС
               </div>
-              <span className="text-xs font-medium text-[hsl(var(--foreground))]">Судья</span>
-            </div>
+              <div className="text-left hidden sm:block">
+                <p className="text-xs font-medium text-[hsl(var(--foreground))] leading-tight">Петрова С.М.</p>
+                <p className="text-xs text-[hsl(var(--muted-foreground))] leading-tight">Судья</p>
+              </div>
+              <Icon name="ChevronDown" size={13} className="text-[hsl(var(--muted-foreground))] group-hover:text-[hsl(var(--navy))] transition-colors" />
+            </button>
           </div>
         </header>
 
         <div className="flex-1 overflow-y-auto py-6">{renderContent()}</div>
+
+        {profileOpen && <ProfilePanel onClose={() => setProfileOpen(false)} />}
 
         <footer className="bg-white border-t border-[hsl(var(--border))] px-8 py-3 flex items-center justify-between">
           <span className="text-xs text-[hsl(var(--muted-foreground))] font-mono-ru">
