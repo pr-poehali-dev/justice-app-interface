@@ -741,6 +741,8 @@ function DistributionSection({ judges, setJudges }: { judges: JudgeItem[]; setJu
   const [reasoning, setReasoning] = useState("");
   const [error, setError] = useState("");
   const [editingJudge, setEditingJudge] = useState<string | null>(null);
+  const [addCaseOpen, setAddCaseOpen] = useState(false);
+  const [newCase, setNewCase] = useState({ type: "Гражданское", subject: "", plaintiff: "", defendant: "", complexity: "Средняя" });
 
   const complexityColor: Record<string, string> = {
     "Особо сложное": "bg-purple-50 text-purple-700 border-purple-200",
@@ -813,6 +815,12 @@ function DistributionSection({ judges, setJudges }: { judges: JudgeItem[]; setJu
               className="px-3 py-2 border border-[hsl(var(--border))] text-xs rounded-sm hover:bg-[hsl(var(--muted))] transition-colors flex items-center gap-1.5 text-[hsl(var(--muted-foreground))]"
             >
               <Icon name="RefreshCw" size={13} /> Сбросить
+            </button>
+            <button
+              onClick={() => setAddCaseOpen(true)}
+              className="px-3 py-2 border border-[hsl(var(--navy))] text-[hsl(var(--navy))] text-xs font-medium rounded-sm hover:bg-[hsl(var(--navy))] hover:text-white transition-colors flex items-center gap-1.5"
+            >
+              <Icon name="Plus" size={13} /> Добавить дело
             </button>
             <button
               onClick={distribute}
@@ -969,6 +977,108 @@ function DistributionSection({ judges, setJudges }: { judges: JudgeItem[]; setJu
           </div>
         </div>
       </div>
+
+      {/* Add case modal */}
+      {addCaseOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setAddCaseOpen(false)}>
+          <div className="w-full max-w-md bg-white rounded-sm shadow-2xl animate-scale-in mx-4" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-[hsl(var(--navy))] px-6 py-4 flex items-center justify-between rounded-t-sm">
+              <div className="flex items-center gap-2">
+                <Icon name="FilePlus" size={16} className="text-[hsl(var(--gold))]" />
+                <p className="text-white font-bold text-sm">Добавить дело в очередь</p>
+              </div>
+              <button onClick={() => setAddCaseOpen(false)} className="text-white/50 hover:text-white transition-colors">
+                <Icon name="X" size={16} />
+              </button>
+            </div>
+
+            <div className="px-6 py-5 space-y-4">
+              {/* Category */}
+              <div>
+                <label className="block text-xs font-semibold text-[hsl(var(--navy))] uppercase tracking-wider mb-2">Категория дела</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {["Гражданское", "Уголовное", "Административное", "Арбитражное"].map((t) => (
+                    <button key={t} onClick={() => setNewCase((c) => ({ ...c, type: t }))}
+                      className={`text-xs px-2.5 py-1.5 rounded-sm border font-medium transition-colors ${newCase.type === t ? "bg-[hsl(var(--navy))] text-white border-[hsl(var(--navy))]" : "bg-white text-[hsl(var(--muted-foreground))] border-[hsl(var(--border))] hover:border-[hsl(var(--navy))]"}`}>
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Subject */}
+              <div>
+                <label className="block text-xs font-semibold text-[hsl(var(--navy))] uppercase tracking-wider mb-2">Предмет дела</label>
+                <input
+                  value={newCase.subject}
+                  onChange={(e) => setNewCase((c) => ({ ...c, subject: e.target.value }))}
+                  placeholder="Напр.: Взыскание задолженности по договору аренды"
+                  className="w-full px-3 py-2.5 text-sm border border-[hsl(var(--border))] rounded-sm bg-[hsl(var(--surface))] focus:outline-none focus:border-[hsl(var(--navy))] focus:ring-1 focus:ring-[hsl(var(--navy))]"
+                />
+              </div>
+
+              {/* Parties */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-[hsl(var(--navy))] uppercase tracking-wider mb-2">Истец / Заявитель</label>
+                  <input
+                    value={newCase.plaintiff}
+                    onChange={(e) => setNewCase((c) => ({ ...c, plaintiff: e.target.value }))}
+                    placeholder="ФИО или наименование"
+                    className="w-full px-3 py-2.5 text-sm border border-[hsl(var(--border))] rounded-sm bg-[hsl(var(--surface))] focus:outline-none focus:border-[hsl(var(--navy))] focus:ring-1 focus:ring-[hsl(var(--navy))]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[hsl(var(--navy))] uppercase tracking-wider mb-2">Ответчик / Обвиняемый</label>
+                  <input
+                    value={newCase.defendant}
+                    onChange={(e) => setNewCase((c) => ({ ...c, defendant: e.target.value }))}
+                    placeholder="ФИО или наименование"
+                    className="w-full px-3 py-2.5 text-sm border border-[hsl(var(--border))] rounded-sm bg-[hsl(var(--surface))] focus:outline-none focus:border-[hsl(var(--navy))] focus:ring-1 focus:ring-[hsl(var(--navy))]"
+                  />
+                </div>
+              </div>
+
+              {/* Complexity */}
+              <div>
+                <label className="block text-xs font-semibold text-[hsl(var(--navy))] uppercase tracking-wider mb-2">Сложность</label>
+                <div className="flex flex-wrap gap-1.5">
+                  {["Низкая", "Средняя", "Высокая", "Особо сложное"].map((c) => (
+                    <button key={c} onClick={() => setNewCase((nc) => ({ ...nc, complexity: c }))}
+                      className={`text-xs px-2.5 py-1.5 rounded-sm border font-medium transition-colors ${newCase.complexity === c ? "bg-[hsl(var(--navy))] text-white border-[hsl(var(--navy))]" : "bg-white text-[hsl(var(--muted-foreground))] border-[hsl(var(--border))] hover:border-[hsl(var(--navy))]"}`}>
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-1">
+                <button onClick={() => setAddCaseOpen(false)}
+                  className="px-4 py-2.5 border border-[hsl(var(--border))] text-sm text-[hsl(var(--muted-foreground))] rounded-sm hover:bg-[hsl(var(--muted))] transition-colors">
+                  Отмена
+                </button>
+                <button
+                  disabled={!newCase.subject.trim()}
+                  onClick={() => {
+                    const year = new Date().getFullYear();
+                    const num = Math.floor(Math.random() * 90000) + 10000;
+                    const id = `22-${num}/${year}`;
+                    const subjectFull = newCase.plaintiff || newCase.defendant
+                      ? `${newCase.subject}${newCase.plaintiff ? " (Истец: " + newCase.plaintiff : ""}${newCase.defendant ? ", Ответчик: " + newCase.defendant : ""})`
+                      : newCase.subject;
+                    setCases((prev) => [...prev, { id, type: newCase.type, subject: subjectFull, complexity: newCase.complexity, status: "new", judge: null }]);
+                    setNewCase({ type: "Гражданское", subject: "", plaintiff: "", defendant: "", complexity: "Средняя" });
+                    setAddCaseOpen(false);
+                  }}
+                  className="flex-1 py-2.5 bg-[hsl(var(--navy))] text-white text-sm font-semibold rounded-sm hover:bg-[hsl(var(--navy-mid))] transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
+                >
+                  <Icon name="Plus" size={15} /> Добавить в очередь
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
