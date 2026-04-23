@@ -1264,13 +1264,16 @@ const SUPPORT_CATEGORIES = [
   "Другое",
 ];
 
-function SupportModal({ onClose }: { onClose: () => void }) {
+function SupportModal({ onClose, profile }: { onClose: () => void; profile: UserProfile }) {
   const [category, setCategory] = useState("");
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [priority, setPriority] = useState<"normal" | "high" | "critical">("normal");
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
+
+  const shortName = profile.name.split(" ").slice(0, 2).join(" ");
+  const roleLabel = profile.role === "judge" ? "Судья" : "Работник аппарата";
 
   const handleSend = () => {
     if (!category || !subject || !message) return;
@@ -1305,13 +1308,32 @@ function SupportModal({ onClose }: { onClose: () => void }) {
           </button>
         </div>
 
+        {/* Applicant info */}
+        <div className="px-6 pt-4 pb-0">
+          <div className="flex items-center gap-3 px-3 py-2.5 bg-[hsl(var(--surface))] border border-[hsl(var(--border))] rounded-sm">
+            <div className="w-7 h-7 rounded-full bg-[hsl(var(--navy))] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+              {profile.name.split(" ").map((w) => w[0]).slice(0, 2).join("")}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-[hsl(var(--navy))] truncate">{shortName}</p>
+              <p className="text-xs text-[hsl(var(--muted-foreground))]">{roleLabel} · {profile.department}</p>
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {profile.spec.slice(0, 2).map((s) => (
+                <span key={s} className="text-xs px-1.5 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded">{s}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+
         {sent ? (
           <div className="px-6 py-10 text-center animate-fade-in">
             <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
               <Icon name="CheckCircle" size={28} className="text-emerald-600" />
             </div>
             <h3 className="font-bold text-[hsl(var(--navy))] text-base mb-1">Обращение отправлено</h3>
-            <p className="text-sm text-[hsl(var(--muted-foreground))] mb-3">Ваш запрос принят в обработку</p>
+            <p className="text-sm text-[hsl(var(--muted-foreground))] mb-1">{shortName}, ваш запрос принят в обработку</p>
+            <p className="text-xs text-[hsl(var(--muted-foreground))] mb-3">{category} · {priority === "critical" ? "Критический" : priority === "high" ? "Высокий" : "Обычный"} приоритет</p>
             <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[hsl(var(--surface))] border border-[hsl(var(--border))] rounded-sm">
               <Icon name="Hash" size={13} className="text-[hsl(var(--muted-foreground))]" />
               <span className="text-xs font-mono-ru font-medium text-[hsl(var(--navy))]">{ticketNum}</span>
@@ -1600,7 +1622,7 @@ export default function Index() {
           <span className="text-xs text-[hsl(var(--muted-foreground))]">{new Date().getFullYear()} · v1.0</span>
         </footer>
 
-        {supportOpen && <SupportModal onClose={() => setSupportOpen(false)} />}
+        {supportOpen && <SupportModal onClose={() => setSupportOpen(false)} profile={profile} />}
       </main>
     </div>
   );
