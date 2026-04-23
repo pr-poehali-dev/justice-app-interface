@@ -258,20 +258,37 @@ function SearchSection() {
   );
 }
 
+const GENERATE_ACT_URL = "https://functions.poehali.dev/55012bc9-e84d-4c0f-962d-c8495c23f047";
+
 function GeneratorSection() {
   const [prompt, setPrompt] = useState("");
   const [files, setFiles] = useState<string[]>([]);
   const [actType, setActType] = useState("решение");
-  const [generated, setGenerated] = useState(false);
+  const [actText, setActText] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const generate = () => {
-    if (!prompt.trim()) return;
+  const generate = async () => {
+    if (!prompt.trim() || loading) return;
     setLoading(true);
-    setTimeout(() => {
+    setError("");
+    setActText("");
+
+    try {
+      const res = await fetch(GENERATE_ACT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ act_type: actType, prompt, documents: files }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Ошибка сервера");
+      setActText(data.act);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Неизвестная ошибка";
+      setError(msg);
+    } finally {
       setLoading(false);
-      setGenerated(true);
-    }, 1800);
+    }
   };
 
   return (
@@ -373,33 +390,50 @@ function GeneratorSection() {
 
         <div>
           <label className="block text-xs font-semibold text-[hsl(var(--navy))] uppercase tracking-wider mb-2">Проект акта</label>
-          {generated ? (
-            <div className="bg-white border border-[hsl(var(--border))] rounded-sm p-5 text-sm leading-relaxed animate-fade-in space-y-3 min-h-64">
+          {error && (
+            <div className="mb-3 px-3 py-2 bg-red-50 border border-red-200 rounded-sm flex items-center gap-2 text-xs text-red-700">
+              <Icon name="AlertCircle" size={13} />
+              {error}
+            </div>
+          )}
+          {actText ? (
+            <div className="bg-white border border-[hsl(var(--border))] rounded-sm p-5 animate-fade-in space-y-3 min-h-64">
               <div className="text-center text-xs font-semibold uppercase tracking-widest text-[hsl(var(--muted-foreground))] pb-3 border-b border-[hsl(var(--border))]">
                 {actType.toUpperCase()}
               </div>
-              <p className="text-[hsl(var(--muted-foreground))] text-xs text-center">г. Москва</p>
-              <p className="text-sm">
-                Суд, рассмотрев в открытом судебном заседании гражданское дело по исковому заявлению, на основании ст. 309, 310 ГК РФ,
-              </p>
-              <p className="font-semibold text-[hsl(var(--navy))]">УСТАНОВИЛ:</p>
-              <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                [Проект акта будет сгенерирован через ChatGPT API на основе введённого промта и загруженных документов. Настройте API-ключ для активации функции.]
-              </p>
+              <div className="text-sm leading-relaxed whitespace-pre-wrap text-[hsl(var(--foreground))] max-h-[480px] overflow-y-auto">
+                {actText}
+              </div>
               <div className="pt-3 border-t border-[hsl(var(--border))] flex gap-2">
-                <button className="flex-1 py-2 border border-[hsl(var(--navy))] text-[hsl(var(--navy))] text-xs font-medium rounded-sm hover:bg-[hsl(var(--navy))] hover:text-white transition-colors flex items-center justify-center gap-1.5">
-                  <Icon name="Download" size={13} /> Скачать DOCX
+                <button
+                  onClick={() => navigator.clipboard.writeText(actText)}
+                  className="flex-1 py-2 border border-[hsl(var(--navy))] text-[hsl(var(--navy))] text-xs font-medium rounded-sm hover:bg-[hsl(var(--navy))] hover:text-white transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <Icon name="Copy" size={13} /> Копировать текст
                 </button>
-                <button className="flex-1 py-2 border border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] text-xs font-medium rounded-sm hover:bg-[hsl(var(--muted))] transition-colors flex items-center justify-center gap-1.5">
-                  <Icon name="Copy" size={13} /> Копировать
+                <button
+                  onClick={() => { setActText(""); setPrompt(""); }}
+                  className="flex-1 py-2 border border-[hsl(var(--border))] text-[hsl(var(--muted-foreground))] text-xs font-medium rounded-sm hover:bg-[hsl(var(--muted))] transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <Icon name="RefreshCw" size={13} /> Новый акт
                 </button>
               </div>
             </div>
           ) : (
             <div className="bg-[hsl(var(--surface))] border border-dashed border-[hsl(var(--border))] rounded-sm min-h-64 flex flex-col items-center justify-center text-center p-8">
-              <Icon name="FileText" size={36} className="text-[hsl(var(--muted-foreground))] mb-3 opacity-40" />
-              <p className="text-sm text-[hsl(var(--muted-foreground))]">Проект акта появится здесь</p>
-              <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">Заполните промт и нажмите «Сгенерировать»</p>
+              {loading ? (
+                <>
+                  <Icon name="Loader" size={32} className="text-emerald-500 mb-3 animate-spin" />
+                  <p className="text-sm text-[hsl(var(--muted-foreground))]">Генерирую проект акта...</p>
+                  <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">Обычно занимает 10–20 секунд</p>
+                </>
+              ) : (
+                <>
+                  <Icon name="FileText" size={36} className="text-[hsl(var(--muted-foreground))] mb-3 opacity-40" />
+                  <p className="text-sm text-[hsl(var(--muted-foreground))]">Проект акта появится здесь</p>
+                  <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">Заполните промт и нажмите «Сгенерировать»</p>
+                </>
+              )}
             </div>
           )}
         </div>

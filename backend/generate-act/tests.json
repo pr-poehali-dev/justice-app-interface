@@ -1,0 +1,23 @@
+{
+  "tests": [
+    {
+      "name": "OPTIONS preflight",
+      "method": "OPTIONS",
+      "path": "/",
+      "expectedStatus": 200
+    },
+    {
+      "name": "Генерация проекта решения",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "act_type": "решение",
+        "prompt": "Дело о взыскании долга по договору займа. Истец ООО Альфа, ответчик Иванов И.И., сумма 100000 рублей.",
+        "documents": []
+      },
+      "expectedStatus": 200,
+      "expectedBody": {"act": "string"},
+      "bodyMatcher": "partial"
+    }
+  ]
+}
