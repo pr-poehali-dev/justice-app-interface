@@ -31,7 +31,7 @@ def handler(event: dict, context) -> dict:
         }
 
     client = OpenAI(
-        api_key=os.environ['OPENAI_API_KEY'],
+        api_key=os.environ['sk-or-vv-4d2dc55ffc4407ec69555bce4f7b38c30ba480ca0414af3ca7ae9e3afe9158f2'],
         base_url='https://api.vsegpt.ru/v1',
     )
     model = 'openai/gpt-4o'
