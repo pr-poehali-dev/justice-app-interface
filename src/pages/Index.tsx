@@ -993,7 +993,7 @@ const DEFAULT_PROFILE: UserProfile = {
   role: "judge",
   position: "Судья",
   department: "Судебный состав №2",
-  courtName: "Преображенский районный суд г. Москвы",
+  courtName: "Городской суд г. Санкт-Петербурга",
   caseLoad: 45,
   casesThisMonth: 12,
   onVacation: false,
