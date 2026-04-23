@@ -1679,7 +1679,7 @@ function RecipientSelector({ selected, onSelect }: { selected: string; onSelect:
 
 type SendStatus = "idle" | "encrypting" | "connecting" | "sending" | "done" | "error";
 
-function RequestsSection() {
+function RequestsSection({ profile }: { profile: UserProfile }) {
   const [recipient, setRecipient] = useState<string>("");
   const [docType, setDocType] = useState<string>("");
   const [caseNumber, setCaseNumber] = useState("");
@@ -1825,6 +1825,10 @@ function RequestsSection() {
                 <span className="text-xs text-[hsl(var(--muted-foreground))]">Идентификатор:</span>
                 <span className="text-xs font-mono-ru font-bold text-[hsl(var(--navy))]">{reqId}</span>
               </div>
+              <div className="flex items-center justify-center gap-1.5 mt-2 mb-1 text-xs text-[hsl(var(--muted-foreground))]">
+                <Icon name="Landmark" size={12} />
+                <span>{profile.courtName}</span>
+              </div>
               <div className="flex flex-wrap justify-center gap-2 mt-3 mb-5 text-xs">
                 <span className="px-2 py-0.5 bg-teal-50 border border-teal-200 text-teal-700 rounded">ГОСТ 28147-89</span>
                 <span className="px-2 py-0.5 bg-teal-50 border border-teal-200 text-teal-700 rounded">ViPNet Coordinator</span>
@@ -1838,6 +1842,19 @@ function RequestsSection() {
           ) : (
             /* Form */
             <>
+              {/* Sender info */}
+              <div className="flex items-center gap-3 px-3 py-2.5 bg-[hsl(var(--surface))] border border-[hsl(var(--border))] rounded-sm">
+                <Icon name="Landmark" size={15} className="text-[hsl(var(--navy))] flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-[hsl(var(--muted-foreground))]">Отправитель</p>
+                  <p className="text-xs font-semibold text-[hsl(var(--navy))] truncate">{profile.courtName || "Наименование суда не указано"}</p>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <p className="text-xs text-[hsl(var(--muted-foreground))]">{profile.position}</p>
+                  <p className="text-xs font-medium text-[hsl(var(--navy))]">{profile.name.split(" ").slice(0, 2).join(" ")}</p>
+                </div>
+              </div>
+
               {/* Crypto info */}
               <div className="grid grid-cols-3 gap-2">
                 {[
@@ -2440,7 +2457,7 @@ export default function Index() {
       case "distribution":
         return <DistributionSection judges={judges} setJudges={setJudges} />;
       case "requests":
-        return <RequestsSection />;
+        return <RequestsSection profile={profile} />;
       default:
         return <HomePage onNavigate={setActive} />;
     }
