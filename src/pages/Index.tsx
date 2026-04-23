@@ -1669,6 +1669,8 @@ function RequestsSection() {
   const [recipient, setRecipient] = useState<string>("");
   const [docType, setDocType] = useState<string>("");
   const [caseNumber, setCaseNumber] = useState("");
+  const [subdivision, setSubdivision] = useState("");
+  const [region, setRegion] = useState("");
   const [comment, setComment] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [sendStatus, setSendStatus] = useState<SendStatus>("idle");
@@ -1700,7 +1702,7 @@ function RequestsSection() {
     }, 5000);
   };
 
-  const reset = () => { setSendStatus("idle"); setRecipient(""); setDocType(""); setCaseNumber(""); setComment(""); setFiles([]); };
+  const reset = () => { setSendStatus("idle"); setRecipient(""); setDocType(""); setCaseNumber(""); setSubdivision(""); setRegion(""); setComment(""); setFiles([]); };
 
   const statusSteps = [
     { key: "encrypting", label: "Шифрование ГОСТ 28147-89", icon: "Lock" },
@@ -1908,6 +1910,59 @@ function RequestsSection() {
                     <Icon name="Paperclip" size={13} />
                     {files.length > 0 ? `${files.length} файл${files.length > 1 ? "а" : ""}` : "Прикрепить файл"}
                   </button>
+                </div>
+              </div>
+
+              {/* Subdivision & Region */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-[hsl(var(--navy))] uppercase tracking-wider mb-2">
+                    Регион / субъект РФ
+                  </label>
+                  <select
+                    value={region}
+                    onChange={(e) => setRegion(e.target.value)}
+                    className="w-full px-3 py-2.5 text-sm border border-[hsl(var(--border))] rounded-sm bg-[hsl(var(--surface))] focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                  >
+                    <option value="">— Выберите регион —</option>
+                    {[
+                      "г. Москва","г. Санкт-Петербург","г. Севастополь","Республика Адыгея","Республика Алтай",
+                      "Республика Башкортостан","Республика Бурятия","Республика Дагестан","Республика Ингушетия",
+                      "Кабардино-Балкарская Республика","Республика Калмыкия","Карачаево-Черкесская Республика",
+                      "Республика Карелия","Республика Коми","Республика Крым","Республика Марий Эл",
+                      "Республика Мордовия","Республика Саха (Якутия)","Республика Северная Осетия — Алания",
+                      "Республика Татарстан","Республика Тыва","Удмуртская Республика","Республика Хакасия",
+                      "Чеченская Республика","Чувашская Республика","Алтайский край","Забайкальский край",
+                      "Камчатский край","Краснодарский край","Красноярский край","Пермский край",
+                      "Приморский край","Ставропольский край","Хабаровский край","Амурская область",
+                      "Архангельская область","Астраханская область","Белгородская область","Брянская область",
+                      "Владимирская область","Волгоградская область","Вологодская область","Воронежская область",
+                      "Ивановская область","Иркутская область","Калининградская область","Калужская область",
+                      "Кемеровская область","Кировская область","Костромская область","Курганская область",
+                      "Курская область","Ленинградская область","Липецкая область","Магаданская область",
+                      "Московская область","Мурманская область","Нижегородская область","Новгородская область",
+                      "Новосибирская область","Омская область","Оренбургская область","Орловская область",
+                      "Пензенская область","Псковская область","Ростовская область","Рязанская область",
+                      "Самарская область","Саратовская область","Сахалинская область","Свердловская область",
+                      "Смоленская область","Тамбовская область","Тверская область","Томская область",
+                      "Тульская область","Тюменская область","Ульяновская область","Челябинская область",
+                      "Ярославская область","Еврейская автономная область","Ненецкий АО","Ханты-Мансийский АО — Югра",
+                      "Чукотский АО","Ямало-Ненецкий АО","Донецкая Народная Республика",
+                      "Луганская Народная Республика","Запорожская область","Херсонская область",
+                    ].map((r) => <option key={r} value={r}>{r}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[hsl(var(--navy))] uppercase tracking-wider mb-2">
+                    Подразделение / отдел
+                  </label>
+                  <input
+                    value={subdivision}
+                    onChange={(e) => setSubdivision(e.target.value)}
+                    placeholder="Напр.: Отдел №3, УФССП по ЦАО"
+                    className="w-full px-3 py-2.5 text-sm border border-[hsl(var(--border))] rounded-sm bg-[hsl(var(--surface))] focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+                  />
+                  <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">Если известно конкретное подразделение</p>
                 </div>
               </div>
 
