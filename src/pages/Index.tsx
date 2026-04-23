@@ -1271,6 +1271,8 @@ function SupportModal({ onClose, profile }: { onClose: () => void; profile: User
   const [priority, setPriority] = useState<"normal" | "high" | "critical">("normal");
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const shortName = profile.name.split(" ").slice(0, 2).join(" ");
   const roleLabel = profile.role === "judge" ? "Судья" : "Работник аппарата";
@@ -1282,6 +1284,24 @@ function SupportModal({ onClose, profile }: { onClose: () => void; profile: User
       setSending(false);
       setSent(true);
     }, 1200);
+  };
+
+  const handleFiles = (files: FileList | null) => {
+    if (!files) return;
+    const newFiles = Array.from(files).filter((f) => f.size <= 10 * 1024 * 1024);
+    setAttachments((prev) => [...prev, ...newFiles].slice(0, 5));
+  };
+
+  const removeFile = (idx: number) => setAttachments((prev) => prev.filter((_, i) => i !== idx));
+
+  const formatSize = (b: number) => b < 1024 * 1024 ? `${(b / 1024).toFixed(0)} КБ` : `${(b / (1024 * 1024)).toFixed(1)} МБ`;
+
+  const fileIcon = (name: string) => {
+    const ext = name.split(".").pop()?.toLowerCase();
+    if (["jpg", "jpeg", "png", "gif", "webp"].includes(ext || "")) return "Image";
+    if (["pdf"].includes(ext || "")) return "FileText";
+    if (["doc", "docx"].includes(ext || "")) return "FileText";
+    return "Paperclip";
   };
 
   const ticketNum = `ТП-${Date.now().toString().slice(-6)}`;
@@ -1338,6 +1358,9 @@ function SupportModal({ onClose, profile }: { onClose: () => void; profile: User
               <Icon name="Hash" size={13} className="text-[hsl(var(--muted-foreground))]" />
               <span className="text-xs font-mono-ru font-medium text-[hsl(var(--navy))]">{ticketNum}</span>
             </div>
+            {attachments.length > 0 && (
+              <p className="text-xs text-[hsl(var(--muted-foreground))] mt-2">Вложений: {attachments.length} файл{attachments.length > 1 ? "а" : ""}</p>
+            )}
             <p className="text-xs text-[hsl(var(--muted-foreground))] mt-3">Сохраните номер обращения для отслеживания статуса</p>
             <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">Ответ поступит в течение 1 рабочего дня</p>
             <button
@@ -1418,6 +1441,44 @@ function SupportModal({ onClose, profile }: { onClose: () => void; profile: User
               />
             </div>
 
+            {/* Attachments */}
+            <div>
+              <label className="block text-xs font-semibold text-[hsl(var(--navy))] uppercase tracking-wider mb-2">
+                Вложения <span className="text-[hsl(var(--muted-foreground))] normal-case font-normal">— до 5 файлов, макс. 10 МБ каждый</span>
+              </label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="image/*,.pdf,.doc,.docx,.txt,.xlsx"
+                className="hidden"
+                onChange={(e) => handleFiles(e.target.files)}
+              />
+              {attachments.length > 0 && (
+                <div className="space-y-1 mb-2">
+                  {attachments.map((f, i) => (
+                    <div key={i} className="flex items-center gap-2 px-3 py-2 bg-[hsl(var(--surface))] border border-[hsl(var(--border))] rounded-sm animate-fade-in">
+                      <Icon name={fileIcon(f.name)} size={14} className="text-[hsl(var(--navy))] flex-shrink-0" />
+                      <span className="text-xs text-[hsl(var(--foreground))] flex-1 truncate">{f.name}</span>
+                      <span className="text-xs text-[hsl(var(--muted-foreground))] flex-shrink-0">{formatSize(f.size)}</span>
+                      <button onClick={() => removeFile(i)} className="text-[hsl(var(--muted-foreground))] hover:text-red-500 transition-colors flex-shrink-0">
+                        <Icon name="X" size={13} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {attachments.length < 5 && (
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 border border-dashed border-[hsl(var(--border))] rounded-sm text-xs text-[hsl(var(--muted-foreground))] hover:border-[hsl(var(--navy))] hover:text-[hsl(var(--navy))] transition-colors"
+                >
+                  <Icon name="Paperclip" size={14} />
+                  Прикрепить файл или скриншот
+                </button>
+              )}
+            </div>
+
             {/* Footer */}
             <div className="flex items-center gap-3 pt-1">
               <button
@@ -1433,7 +1494,7 @@ function SupportModal({ onClose, profile }: { onClose: () => void; profile: User
               >
                 {sending
                   ? <><Icon name="Loader" size={15} className="animate-spin" /> Отправляю...</>
-                  : <><Icon name="Send" size={15} /> Отправить обращение</>
+                  : <><Icon name="Send" size={15} /> Отправить обращение {attachments.length > 0 ? `(${attachments.length} файл${attachments.length > 1 ? "а" : ""})` : ""}</>
                 }
               </button>
             </div>
