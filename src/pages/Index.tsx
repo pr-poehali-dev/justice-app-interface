@@ -1547,15 +1547,116 @@ function AuthScreen({ onAuth }: { onAuth: () => void }) {
 }
 
 const RECIPIENTS = [
-  { id: "fssp", label: "ФССП России", fullName: "Федеральная служба судебных приставов", icon: "Landmark", docs: ["Исполнительный лист", "Судебный приказ", "Определение суда"] },
-  { id: "fns", label: "ФНС России", fullName: "Федеральная налоговая служба", icon: "Building2", docs: ["Судебный запрос", "Решение суда", "Определение суда"] },
-  { id: "mvd", label: "МВД России", fullName: "Министерство внутренних дел", icon: "Shield", docs: ["Судебный запрос", "Постановление суда", "Запрос о предоставлении сведений"] },
-  { id: "prokuratura", label: "Прокуратура", fullName: "Прокуратура Российской Федерации", icon: "Scale", docs: ["Судебный запрос", "Копия судебного акта", "Уведомление"] },
-  { id: "rosreestr", label: "Росреестр", fullName: "Федеральная служба государственной регистрации", icon: "MapPin", docs: ["Судебный запрос", "Решение суда", "Определение об обеспечительных мерах"] },
-  { id: "other", label: "Иной орган", fullName: "Другой государственный орган", icon: "SendHorizonal", docs: ["Судебный запрос", "Судебный акт", "Исполнительный лист", "Иной документ"] },
+  // Федеральные органы исполнительной власти
+  { id: "fssp", group: "Федеральные органы", label: "ФССП России", fullName: "Федеральная служба судебных приставов", icon: "Landmark", docs: ["Исполнительный лист", "Судебный приказ", "Определение суда", "Постановление суда"] },
+  { id: "fns", group: "Федеральные органы", label: "ФНС России", fullName: "Федеральная налоговая служба", icon: "Building2", docs: ["Судебный запрос", "Решение суда", "Определение суда", "Запрос о предоставлении сведений"] },
+  { id: "mvd", group: "Федеральные органы", label: "МВД России", fullName: "Министерство внутренних дел Российской Федерации", icon: "Shield", docs: ["Судебный запрос", "Постановление суда", "Запрос о предоставлении сведений", "Копия судебного акта"] },
+  { id: "fsb", group: "Федеральные органы", label: "ФСБ России", fullName: "Федеральная служба безопасности Российской Федерации", icon: "ShieldAlert", docs: ["Судебный запрос", "Постановление суда", "Копия судебного акта"] },
+  { id: "fsin", group: "Федеральные органы", label: "ФСИН России", fullName: "Федеральная служба исполнения наказаний", icon: "Lock", docs: ["Постановление суда", "Приговор суда", "Определение суда", "Судебный запрос"] },
+  { id: "rosreestr", group: "Федеральные органы", label: "Росреестр", fullName: "Федеральная служба государственной регистрации, кадастра и картографии", icon: "MapPin", docs: ["Судебный запрос", "Решение суда", "Определение об обеспечительных мерах"] },
+  { id: "rosfinnadzor", group: "Федеральные органы", label: "Росфинмониторинг", fullName: "Федеральная служба по финансовому мониторингу", icon: "Search", docs: ["Судебный запрос", "Запрос о предоставлении сведений", "Копия судебного акта"] },
+  { id: "cbrf", group: "Федеральные органы", label: "Банк России", fullName: "Центральный банк Российской Федерации", icon: "Banknote", docs: ["Судебный запрос", "Решение суда", "Запрос о предоставлении сведений"] },
+  { id: "minjust", group: "Федеральные органы", label: "Минюст России", fullName: "Министерство юстиции Российской Федерации", icon: "Scale", docs: ["Судебный запрос", "Копия судебного акта", "Уведомление"] },
+  { id: "minzdrav", group: "Федеральные органы", label: "Минздрав России", fullName: "Министерство здравоохранения Российской Федерации", icon: "HeartPulse", docs: ["Судебный запрос", "Запрос о предоставлении сведений", "Определение суда"] },
+  { id: "minpros", group: "Федеральные органы", label: "Минпросвещения", fullName: "Министерство просвещения Российской Федерации", icon: "BookOpen", docs: ["Судебный запрос", "Решение суда", "Определение суда"] },
+  { id: "mintrud", group: "Федеральные органы", label: "Минтруд России", fullName: "Министерство труда и социальной защиты Российской Федерации", icon: "Users", docs: ["Судебный запрос", "Решение суда", "Запрос о предоставлении сведений"] },
+  { id: "minfin", group: "Федеральные органы", label: "Минфин России", fullName: "Министерство финансов Российской Федерации", icon: "CircleDollarSign", docs: ["Судебный запрос", "Решение суда", "Запрос о предоставлении сведений"] },
+  { id: "rospotrebnadzor", group: "Федеральные органы", label: "Роспотребнадзор", fullName: "Федеральная служба по надзору в сфере защиты прав потребителей", icon: "BadgeCheck", docs: ["Судебный запрос", "Решение суда", "Предписание суда"] },
+  { id: "roszdravnadzor", group: "Федеральные органы", label: "Росздравнадзор", fullName: "Федеральная служба по надзору в сфере здравоохранения", icon: "Activity", docs: ["Судебный запрос", "Решение суда", "Запрос о предоставлении сведений"] },
+  { id: "rostrud", group: "Федеральные органы", label: "Роструд", fullName: "Федеральная служба по труду и занятости", icon: "Briefcase", docs: ["Судебный запрос", "Решение суда", "Запрос о предоставлении сведений"] },
+  { id: "fas", group: "Федеральные органы", label: "ФАС России", fullName: "Федеральная антимонопольная служба", icon: "BarChart2", docs: ["Судебный запрос", "Решение суда", "Запрос о предоставлении сведений"] },
+  { id: "roskomnadzor", group: "Федеральные органы", label: "Роскомнадзор", fullName: "Федеральная служба по надзору в сфере связи и информационных технологий", icon: "Wifi", docs: ["Судебный запрос", "Решение суда", "Предписание суда"] },
+  { id: "pfr", group: "Федеральные органы", label: "СФР (Социальный фонд)", fullName: "Социальный фонд России (СФР)", icon: "Users", docs: ["Судебный запрос", "Решение суда", "Исполнительный лист", "Запрос о предоставлении сведений"] },
+  { id: "fts", group: "Федеральные органы", label: "ФТС России", fullName: "Федеральная таможенная служба", icon: "Package", docs: ["Судебный запрос", "Решение суда", "Запрос о предоставлении сведений"] },
+  { id: "mchс", group: "Федеральные органы", label: "МЧС России", fullName: "Министерство Российской Федерации по делам гражданской обороны", icon: "Flame", docs: ["Судебный запрос", "Решение суда", "Предписание суда"] },
+  { id: "minoborony", group: "Федеральные органы", label: "Минобороны России", fullName: "Министерство обороны Российской Федерации", icon: "Flag", docs: ["Судебный запрос", "Постановление суда", "Копия судебного акта"] },
+  { id: "minstroi", group: "Федеральные органы", label: "Минстрой России", fullName: "Министерство строительства и жилищно-коммунального хозяйства РФ", icon: "Building", docs: ["Судебный запрос", "Решение суда", "Определение об обеспечительных мерах"] },
+  { id: "rosimuschestvo", group: "Федеральные органы", label: "Росимущество", fullName: "Федеральное агентство по управлению государственным имуществом", icon: "Home", docs: ["Судебный запрос", "Решение суда", "Исполнительный лист", "Определение суда"] },
+  // Органы прокуратуры и следствия
+  { id: "prokuratura", group: "Прокуратура и следствие", label: "Прокуратура РФ", fullName: "Прокуратура Российской Федерации", icon: "Scale", docs: ["Судебный запрос", "Копия судебного акта", "Уведомление", "Представление"] },
+  { id: "sk", group: "Прокуратура и следствие", label: "СК России", fullName: "Следственный комитет Российской Федерации", icon: "Search", docs: ["Судебный запрос", "Постановление суда", "Копия судебного акта", "Запрос о предоставлении сведений"] },
+  // Органы государственной власти субъектов РФ
+  { id: "gov_region", group: "Органы субъектов РФ", label: "Правительство субъекта РФ", fullName: "Правительство (Администрация) субъекта Российской Федерации", icon: "Building2", docs: ["Судебный запрос", "Решение суда", "Определение суда", "Уведомление"] },
+  { id: "zaks", group: "Органы субъектов РФ", label: "Законодательное собрание", fullName: "Законодательное собрание (парламент) субъекта Российской Федерации", icon: "FileText", docs: ["Судебный запрос", "Копия судебного акта", "Уведомление"] },
+  { id: "minjust_region", group: "Органы субъектов РФ", label: "Управление Минюста", fullName: "Управление Министерства юстиции РФ по субъекту Федерации", icon: "Scale", docs: ["Судебный запрос", "Копия судебного акта", "Уведомление"] },
+  { id: "nalogovaya_region", group: "Органы субъектов РФ", label: "УФНС по региону", fullName: "Управление Федеральной налоговой службы по субъекту Федерации", icon: "Building2", docs: ["Судебный запрос", "Решение суда", "Исполнительный лист"] },
+  // Органы местного самоуправления
+  { id: "adm_city", group: "Органы МСУ", label: "Администрация города", fullName: "Администрация городского округа (городского поселения)", icon: "MapPin", docs: ["Судебный запрос", "Решение суда", "Предписание суда", "Уведомление"] },
+  { id: "adm_rayon", group: "Органы МСУ", label: "Администрация района", fullName: "Администрация муниципального района (муниципального округа)", icon: "MapPin", docs: ["Судебный запрос", "Решение суда", "Уведомление"] },
+  { id: "sovet_dep", group: "Органы МСУ", label: "Совет депутатов", fullName: "Совет депутатов муниципального образования", icon: "Users", docs: ["Судебный запрос", "Копия судебного акта", "Уведомление"] },
+  // Иные органы
+  { id: "notariat", group: "Иные органы", label: "Нотариальная палата", fullName: "Нотариальная палата субъекта Российской Федерации", icon: "Stamp", docs: ["Судебный запрос", "Решение суда", "Запрос о предоставлении сведений"] },
+  { id: "advokatskaya", group: "Иные органы", label: "Адвокатская палата", fullName: "Адвокатская палата субъекта Российской Федерации", icon: "Briefcase", docs: ["Судебный запрос", "Копия судебного акта", "Уведомление"] },
+  { id: "izbirkom", group: "Иные органы", label: "Избирательная комиссия", fullName: "Избирательная комиссия субъекта Российской Федерации", icon: "Vote", docs: ["Судебный запрос", "Решение суда", "Определение суда"] },
 ];
 
 const DOC_TYPES = ["Судебный запрос", "Судебный акт", "Исполнительный лист", "Судебный приказ", "Определение суда", "Постановление суда", "Иной документ"];
+
+const RECIPIENT_GROUPS = Array.from(new Set(RECIPIENTS.map((r) => r.group)));
+
+function RecipientSelector({ selected, onSelect }: { selected: string; onSelect: (id: string) => void }) {
+  const [search, setSearch] = useState("");
+  const [openGroup, setOpenGroup] = useState<string | null>("Федеральные органы");
+
+  const filtered = RECIPIENTS.filter(
+    (r) => r.label.toLowerCase().includes(search.toLowerCase()) || r.fullName.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const grouped = RECIPIENT_GROUPS.map((g) => ({
+    group: g,
+    items: filtered.filter((r) => r.group === g),
+  })).filter((g) => g.items.length > 0);
+
+  return (
+    <div className="border border-[hsl(var(--border))] rounded-sm overflow-hidden">
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-[hsl(var(--border))] bg-[hsl(var(--surface))]">
+        <Icon name="Search" size={14} className="text-[hsl(var(--muted-foreground))] flex-shrink-0" />
+        <input
+          value={search}
+          onChange={(e) => { setSearch(e.target.value); setOpenGroup(null); }}
+          placeholder="Поиск органа..."
+          className="flex-1 text-xs bg-transparent focus:outline-none"
+        />
+        {search && <button onClick={() => setSearch("")} className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--navy))]"><Icon name="X" size={12} /></button>}
+      </div>
+      <div className="max-h-56 overflow-y-auto">
+        {grouped.map(({ group, items }) => (
+          <div key={group}>
+            <button
+              onClick={() => setOpenGroup(openGroup === group ? null : group)}
+              className="w-full flex items-center justify-between px-3 py-2 bg-[hsl(var(--surface))] border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--muted))] transition-colors"
+            >
+              <span className="text-xs font-semibold text-[hsl(var(--navy))] uppercase tracking-wider">{group}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-[hsl(var(--muted-foreground))]">{items.length}</span>
+                <Icon name={openGroup === group || search ? "ChevronUp" : "ChevronDown"} size={12} className="text-[hsl(var(--muted-foreground))]" />
+              </div>
+            </button>
+            {(openGroup === group || search) && items.map((r) => (
+              <button
+                key={r.id}
+                onClick={() => { onSelect(r.id); setSearch(""); }}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 border-b border-[hsl(var(--border))] last:border-0 text-left transition-colors ${selected === r.id ? "bg-teal-50" : "bg-white hover:bg-[hsl(var(--surface))]"}`}
+              >
+                <div className={`w-6 h-6 rounded flex items-center justify-center flex-shrink-0 ${selected === r.id ? "bg-teal-600" : "bg-[hsl(var(--muted))]"}`}>
+                  <Icon name={r.icon} size={12} className={selected === r.id ? "text-white" : "text-[hsl(var(--muted-foreground))]"} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={`text-xs font-medium truncate ${selected === r.id ? "text-teal-800" : "text-[hsl(var(--foreground))]"}`}>{r.label}</p>
+                  <p className="text-xs text-[hsl(var(--muted-foreground))] truncate leading-tight">{r.fullName}</p>
+                </div>
+                {selected === r.id && <Icon name="CheckCircle" size={13} className="text-teal-500 flex-shrink-0" />}
+              </button>
+            ))}
+          </div>
+        ))}
+        {grouped.length === 0 && (
+          <div className="px-3 py-4 text-center text-xs text-[hsl(var(--muted-foreground))]">Ничего не найдено</div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 type SendStatus = "idle" | "encrypting" | "connecting" | "sending" | "done" | "error";
 
@@ -1721,24 +1822,28 @@ function RequestsSection() {
               {/* Recipient */}
               <div>
                 <label className="block text-xs font-semibold text-[hsl(var(--navy))] uppercase tracking-wider mb-2">Орган-получатель</label>
-                <div className="grid grid-cols-2 gap-2">
-                  {RECIPIENTS.map((r) => (
-                    <button
-                      key={r.id}
-                      onClick={() => { setRecipient(r.id); setDocType(""); }}
-                      className={`flex items-center gap-3 px-3 py-2.5 border rounded-sm text-left transition-all ${recipient === r.id ? "border-teal-500 bg-teal-50" : "border-[hsl(var(--border))] bg-white hover:border-teal-300"}`}
-                    >
-                      <div className={`w-7 h-7 rounded flex items-center justify-center flex-shrink-0 ${recipient === r.id ? "bg-teal-600" : "bg-[hsl(var(--muted))]"}`}>
-                        <Icon name={r.icon} size={14} className={recipient === r.id ? "text-white" : "text-[hsl(var(--muted-foreground))]"} />
-                      </div>
-                      <div className="min-w-0">
-                        <p className={`text-xs font-semibold truncate ${recipient === r.id ? "text-teal-800" : "text-[hsl(var(--foreground))]"}`}>{r.label}</p>
-                        <p className="text-xs text-[hsl(var(--muted-foreground))] truncate leading-tight">{r.fullName.split(" ").slice(0, 3).join(" ")}</p>
-                      </div>
-                      {recipient === r.id && <Icon name="CheckCircle" size={14} className="text-teal-500 ml-auto flex-shrink-0" />}
+
+                {/* Selected display */}
+                {selectedRecipient && (
+                  <div className="flex items-center gap-3 px-3 py-2.5 mb-2 bg-teal-50 border border-teal-300 rounded-sm animate-fade-in">
+                    <div className="w-7 h-7 rounded bg-teal-600 flex items-center justify-center flex-shrink-0">
+                      <Icon name={selectedRecipient.icon} size={14} className="text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-teal-800">{selectedRecipient.label}</p>
+                      <p className="text-xs text-teal-600 truncate">{selectedRecipient.fullName}</p>
+                    </div>
+                    <button onClick={() => { setRecipient(""); setDocType(""); }} className="text-teal-400 hover:text-teal-700 transition-colors">
+                      <Icon name="X" size={14} />
                     </button>
-                  ))}
-                </div>
+                  </div>
+                )}
+
+                {/* Search */}
+                <RecipientSelector
+                  selected={recipient}
+                  onSelect={(id) => { setRecipient(id); setDocType(""); }}
+                />
               </div>
 
               {/* Doc type */}
