@@ -1893,6 +1893,10 @@ function RequestsSection() {
                           {d}
                         </button>
                       ))}
+                      <button onClick={() => setDocType("Частное определение")}
+                        className={`text-xs px-2.5 py-1.5 rounded-sm border font-medium transition-colors ${docType === "Частное определение" ? "bg-red-600 text-white border-red-600" : "bg-red-50 text-red-600 border-red-300 hover:bg-red-100"}`}>
+                        Частное определение
+                      </button>
                     </div>
                   </div>
                 )}
@@ -1904,6 +1908,10 @@ function RequestsSection() {
                         {d}
                       </button>
                     ))}
+                    <button onClick={() => setDocType("Частное определение")}
+                      className={`text-xs px-2.5 py-1.5 rounded-sm border font-medium transition-colors ${docType === "Частное определение" ? "bg-red-600 text-white border-red-600" : "bg-red-50 text-red-600 border-red-300 hover:bg-red-100"}`}>
+                      Частное определение
+                    </button>
                   </div>
                 )}
               </div>
@@ -1989,26 +1997,11 @@ function RequestsSection() {
                   className="w-full px-3 py-2.5 text-sm border border-[hsl(var(--border))] rounded-sm bg-[hsl(var(--surface))] focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 resize-none" />
               </div>
 
-              <div className="flex gap-2">
-                <button onClick={handleSend} disabled={!recipient || !docType || !caseNumber}
-                  className="flex-1 py-3 bg-teal-700 text-white font-semibold text-sm rounded-sm hover:bg-teal-800 transition-colors disabled:opacity-40 flex items-center justify-center gap-2">
-                  <Icon name="Lock" size={15} />
-                  Зашифровать и отправить
-                </button>
-                <button
-                  disabled={!recipient || !caseNumber}
-                  onClick={() => {
-                    if (!recipient || !caseNumber) return;
-                    setDocType("Частное определение");
-                    setTimeout(() => handleSend(), 50);
-                  }}
-                  title="Направить частное определение суда"
-                  className="px-4 py-3 bg-red-600 text-white font-semibold text-sm rounded-sm hover:bg-red-700 transition-colors disabled:opacity-40 flex items-center justify-center gap-2 flex-shrink-0"
-                >
-                  <Icon name="AlertTriangle" size={15} />
-                  Частное определение
-                </button>
-              </div>
+              <button onClick={handleSend} disabled={!recipient || !docType || !caseNumber}
+                className="w-full py-3 bg-teal-700 text-white font-semibold text-sm rounded-sm hover:bg-teal-800 transition-colors disabled:opacity-40 flex items-center justify-center gap-2">
+                <Icon name="Lock" size={15} />
+                Зашифровать и отправить
+              </button>
             </>
           )}
         </div>
