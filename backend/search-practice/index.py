@@ -29,11 +29,11 @@ def handler(event: dict, context) -> dict:
             'body': json.dumps({'error': 'Сообщения не переданы'}, ensure_ascii=False)
         }
 
-    api_key = os.environ.get('VSEGPT_API_KEY') or os.environ.get('OPENAI_API_KEY')
-    base_url = 'https://api.vsegpt.ru/v1' if os.environ.get('VSEGPT_API_KEY') else None
-    model = 'openai/gpt-4o-mini' if os.environ.get('VSEGPT_API_KEY') else 'gpt-4o-mini'
-
-    client = OpenAI(api_key=api_key, base_url=base_url)
+    client = OpenAI(
+        api_key=os.environ['OPENAI_API_KEY'],
+        base_url='https://api.vsegpt.ru/v1',
+    )
+    model = 'openai/gpt-4o-mini'
 
     system_prompt = """Ты — специализированный ИИ-ассистент для поиска и анализа судебной практики в России.
 

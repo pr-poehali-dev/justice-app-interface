@@ -30,10 +30,10 @@ def handler(event: dict, context) -> dict:
             'body': json.dumps({'error': 'Судьи или дела не переданы'}, ensure_ascii=False)
         }
 
-    api_key = os.environ.get('VSEGPT_API_KEY') or os.environ.get('OPENAI_API_KEY')
-    base_url = 'https://api.vsegpt.ru/v1' if os.environ.get('VSEGPT_API_KEY') else None
-
-    client = OpenAI(api_key=api_key, base_url=base_url)
+    client = OpenAI(
+        api_key=os.environ['OPENAI_API_KEY'],
+        base_url='https://api.vsegpt.ru/v1',
+    )
 
     unassigned = [c for c in cases if c.get('status') != 'assigned']
 
@@ -75,7 +75,7 @@ def handler(event: dict, context) -> dict:
 {json.dumps(unassigned, ensure_ascii=False, indent=2)}"""
 
     response = client.chat.completions.create(
-        model="openai/gpt-4o-mini" if os.environ.get('VSEGPT_API_KEY') else "gpt-4o",
+        model="openai/gpt-4o-mini",
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_message},

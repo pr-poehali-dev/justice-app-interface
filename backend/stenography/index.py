@@ -32,9 +32,10 @@ def handler(event: dict, context) -> dict:
             'body': json.dumps({'error': 'Аудиофайл не передан'}, ensure_ascii=False)
         }
 
-    api_key = os.environ.get('VSEGPT_API_KEY') or os.environ.get('OPENAI_API_KEY')
-    base_url = 'https://api.vsegpt.ru/v1' if os.environ.get('VSEGPT_API_KEY') else None
-    client = OpenAI(api_key=api_key, base_url=base_url)
+    client = OpenAI(
+        api_key=os.environ['OPENAI_API_KEY'],
+        base_url='https://api.vsegpt.ru/v1',
+    )
 
     audio_bytes = base64.b64decode(audio_b64)
 
