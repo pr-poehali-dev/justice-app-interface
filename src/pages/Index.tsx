@@ -80,7 +80,7 @@ function HomePage({ onNavigate }: { onNavigate: (s: Section) => void }) {
             <span className="w-2 h-2 rounded-full bg-[hsl(var(--gold))] status-dot" />
             <span className="text-xs text-[hsl(var(--gold))]">Система активна</span>
           </div>
-          <h1 className="text-3xl font-bold mb-2 tracking-tight">ГАС «Правосудие»</h1>
+          <h1 className="text-3xl font-bold mb-2 tracking-tight">ГАС «Судопроизводство 1.0»</h1>
           <p className="text-white/60 text-sm max-w-xl leading-relaxed">
             Автоматизированная информационная система поддержки судопроизводства с применением технологий искусственного интеллекта
           </p>
@@ -706,7 +706,7 @@ export default function Index() {
             </div>
             {sidebarOpen && (
               <div className="animate-fade-in overflow-hidden">
-                <div className="text-white font-bold text-sm leading-tight">ГАС Правосудие</div>
+                <div className="text-white font-bold text-sm leading-tight">ГАС Судопроизводство</div>
                 <div className="text-white/40 text-xs">ИИ-модули</div>
               </div>
             )}
@@ -794,7 +794,7 @@ export default function Index() {
 
         <footer className="bg-white border-t border-[hsl(var(--border))] px-8 py-3 flex items-center justify-between">
           <span className="text-xs text-[hsl(var(--muted-foreground))] font-mono-ru">
-            ГАС «Правосудие» · АИС поддержки судопроизводства
+            ГАС «Судопроизводство 1.0» · АИС поддержки судопроизводства
           </span>
           <span className="text-xs text-[hsl(var(--muted-foreground))]">{new Date().getFullYear()} · v1.0</span>
         </footer>
